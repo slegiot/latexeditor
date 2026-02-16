@@ -47,6 +47,7 @@ export async function streamChat(opts: StreamOptions): Promise<ReadableStream<Ui
     const reader = res.body!.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
+    let inThinking = false;
 
     return new ReadableStream({
         async pull(controller) {
@@ -72,7 +73,35 @@ export async function streamChat(opts: StreamOptions): Promise<ReadableStream<Ui
 
                     try {
                         const parsed = JSON.parse(data);
-                        const delta = parsed.choices?.[0]?.delta?.content;
+                        let delta = parsed.choices?.[0]?.delta?.content;
+                        if (!delta) continue;
+
+                        // Filter out DeepSeek R1 <think>...</think> reasoning tokens
+                        if (inThinking) {
+                            const endIdx = delta.indexOf("</think>");
+                            if (endIdx !== -1) {
+                                inThinking = false;
+                                delta = delta.slice(endIdx + 8);
+                            } else {
+                                continue; // Still inside thinking, skip entirely
+                            }
+                        }
+
+                        const startIdx = delta.indexOf("<think>");
+                        if (startIdx !== -1) {
+                            const before = delta.slice(0, startIdx);
+                            const after = delta.slice(startIdx + 7);
+                            const endIdx = after.indexOf("</think>");
+                            if (endIdx !== -1) {
+                                // Thinking block starts and ends in same chunk
+                                delta = before + after.slice(endIdx + 8);
+                            } else {
+                                // Thinking block started but not ended
+                                inThinking = true;
+                                delta = before;
+                            }
+                        }
+
                         if (delta) {
                             controller.enqueue(new TextEncoder().encode(delta));
                         }

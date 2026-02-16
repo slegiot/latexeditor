@@ -113,6 +113,23 @@ create policy "Users can delete documents in own projects" on public.documents f
             and projects.owner_id = auth.uid()
     )
 );
+-- ──────────────── User Subscriptions ────────────────
+-- Tracks Stripe subscription status for plan-based limits
+create table if not exists public.user_subscriptions (
+    user_id uuid references public.profiles(id) on delete cascade primary key,
+    plan text not null default 'free',
+    status text not null default 'active',
+    stripe_customer_id text,
+    stripe_subscription_id text,
+    created_at timestamptz default now() not null,
+    updated_at timestamptz default now() not null
+);
+alter table public.user_subscriptions enable row level security;
+-- Users can read their own subscription
+create policy "Users can view own subscription" on public.user_subscriptions for
+select using (auth.uid() = user_id);
+-- Service role (webhook) can upsert subscriptions — no user-facing insert/update policies needed
+-- The Stripe webhook uses the service role key via createClient()
 -- ──────────────── Updated-at triggers ────────────────
 create or replace function public.update_updated_at() returns trigger as $$ begin new.updated_at = now();
 return new;

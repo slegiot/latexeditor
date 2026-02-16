@@ -39,9 +39,8 @@ RUN apk add --no-cache \
     texmf-dist-fontsextra \
     texmf-dist-science \
     texmf-dist-pictures \
-    texmf-dist-mathscience \
     texmf-dist-bibtexextra \
-    texmf-dist-publishers \
+    texmf-dist-most \
     && rm -rf /var/cache/apk/*
 
 ENV NODE_ENV=production
