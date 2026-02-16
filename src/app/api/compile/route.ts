@@ -16,8 +16,10 @@ export async function POST(request: NextRequest) {
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
         || request.headers.get("x-real-ip")
         || "unknown";
+    console.info("[compile] request received", { ip });
     const rl = rateLimit(`compile:${ip}`, 10, 60_000);
     if (!rl.allowed) {
+        console.warn("[compile] rate limited", { ip, resetMs: rl.resetMs });
         return NextResponse.json(
             { error: "Too many compilations. Please wait before trying again." },
             {
@@ -31,7 +33,9 @@ export async function POST(request: NextRequest) {
     let planLimits: PlanLimits | null = null;
     try {
         const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
         if (user) {
             planLimits = await getUserLimits(user.id);
         }
@@ -39,9 +43,18 @@ export async function POST(request: NextRequest) {
         // Auth check is best-effort for compile
     }
     const compileTimeout = planLimits?.compileTimeoutMs ?? 60_000;
+    console.info("[compile] plan limits resolved", {
+        hasUser: Boolean(planLimits),
+        compileTimeout,
+    });
 
     try {
         const { content, projectId } = await request.json();
+        console.info("[compile] payload received", {
+            hasContent: typeof content === "string",
+            contentLength: typeof content === "string" ? content.length : 0,
+            hasProjectId: Boolean(projectId),
+        });
 
         if (!content || typeof content !== "string") {
             return NextResponse.json(
@@ -61,25 +74,30 @@ export async function POST(request: NextRequest) {
 
         // Write the .tex file
         writeFileSync(texFile, content, "utf-8");
+        console.info("[compile] job initialized", {
+            jobId,
+            jobDir,
+            outputDir,
+        });
 
         let log = "";
         let pdfGenerated = false;
 
         try {
-            // Try docker exec first (container running)
+            console.info("[compile] compiling with pdflatex", { jobId });
             log = execSync(
-                `docker exec latexforge-texlive pdflatex -interaction=nonstopmode -output-directory=/workspace/jobs/${jobId}/output /workspace/jobs/${jobId}/document.tex 2>&1`,
+                `pdflatex -interaction=nonstopmode -output-directory="${outputDir}" "${texFile}" 2>&1`,
                 {
                     timeout: compileTimeout,
                     encoding: "utf-8",
-                    env: { ...process.env },
                 }
             );
 
-            // Second pass for references
+            // Second pass for references / TOC
             try {
+                console.info("[compile] second pass", { jobId });
                 log += "\n" + execSync(
-                    `docker exec latexforge-texlive pdflatex -interaction=nonstopmode -output-directory=/workspace/jobs/${jobId}/output /workspace/jobs/${jobId}/document.tex 2>&1`,
+                    `pdflatex -interaction=nonstopmode -output-directory="${outputDir}" "${texFile}" 2>&1`,
                     {
                         timeout: compileTimeout,
                         encoding: "utf-8",
@@ -88,66 +106,26 @@ export async function POST(request: NextRequest) {
             } catch {
                 // Second pass failure is non-critical
             }
-        } catch (execError: unknown) {
-            // Capture output even on non-zero exit
-            if (execError && typeof execError === "object" && "stdout" in execError) {
-                log = (execError as { stdout: string }).stdout || "";
+        } catch (compileError: unknown) {
+            console.error("[compile] pdflatex failed", { jobId });
+            if (compileError && typeof compileError === "object" && "stdout" in compileError) {
+                log = (compileError as { stdout: string }).stdout || "";
             }
-            if (execError && typeof execError === "object" && "stderr" in execError) {
-                log += "\n" + ((execError as { stderr: string }).stderr || "");
-            }
-
-            // Fallback: try local pdflatex if docker not available
-            try {
-                log = execSync(
-                    `pdflatex -interaction=nonstopmode -output-directory="${outputDir}" "${texFile}" 2>&1`,
-                    {
-                        timeout: compileTimeout,
-                        encoding: "utf-8",
-                    }
-                );
-
-                // Second pass
-                try {
-                    log += "\n" + execSync(
-                        `pdflatex -interaction=nonstopmode -output-directory="${outputDir}" "${texFile}" 2>&1`,
-                        {
-                            timeout: compileTimeout,
-                            encoding: "utf-8",
-                        }
-                    );
-                } catch {
-                    // Non-critical
-                }
-            } catch (localError: unknown) {
-                if (localError && typeof localError === "object" && "stdout" in localError) {
-                    log = (localError as { stdout: string }).stdout || "";
-                }
-                if (localError && typeof localError === "object" && "stderr" in localError) {
-                    log += "\n" + ((localError as { stderr: string }).stderr || "");
-                }
+            if (compileError && typeof compileError === "object" && "stderr" in compileError) {
+                log += "\n" + ((compileError as { stderr: string }).stderr || "");
             }
         }
 
-        // Check the two possible PDF locations
-        const dockerPdfPath = path.join(
-            process.cwd(),
-            "compile",
-            "jobs",
+        // Check if PDF was generated
+        const pdfPath = path.join(outputDir, "document.pdf");
+        if (existsSync(pdfPath)) {
+            pdfGenerated = true;
+        }
+        console.info("[compile] pdf detection", {
             jobId,
-            "output",
-            "document.pdf"
-        );
-        const localPdfPath = path.join(outputDir, "document.pdf");
-
-        let pdfPath = "";
-        if (existsSync(dockerPdfPath)) {
-            pdfPath = dockerPdfPath;
-            pdfGenerated = true;
-        } else if (existsSync(localPdfPath)) {
-            pdfPath = localPdfPath;
-            pdfGenerated = true;
-        }
+            pdfGenerated,
+            pdfPath,
+        });
 
         // Parse errors from the log
         const errors = parseLatexLog(log);
@@ -157,15 +135,13 @@ export async function POST(request: NextRequest) {
             const servePath = path.join(COMPILE_DIR, `${jobId}.pdf`);
             const pdfBuffer = readFileSync(pdfPath);
             writeFileSync(servePath, pdfBuffer);
+            console.info("[compile] pdf written", { jobId, servePath });
 
             // Schedule cleanup after 10 minutes
             setTimeout(() => {
                 try {
                     rmSync(jobDir, { recursive: true, force: true });
                     if (existsSync(servePath)) rmSync(servePath);
-                    // Clean docker-side job dir
-                    const dockerJobDir = path.join(process.cwd(), "compile", "jobs", jobId);
-                    if (existsSync(dockerJobDir)) rmSync(dockerJobDir, { recursive: true, force: true });
                 } catch {
                     // Cleanup failures are non-critical
                 }
@@ -190,7 +166,7 @@ export async function POST(request: NextRequest) {
             { status: 200 } // 200 because this is a valid response, not a server error
         );
     } catch (error) {
-        console.error("Compile error:", error);
+        console.error("[compile] unexpected error", error);
         return NextResponse.json(
             { error: "Internal compilation error" },
             { status: 500 }

@@ -40,7 +40,6 @@ RUN apk add --no-cache \
     texmf-dist-science \
     texmf-dist-pictures \
     texmf-dist-bibtexextra \
-    texmf-dist-most \
     && rm -rf /var/cache/apk/*
 
 ENV NODE_ENV=production
