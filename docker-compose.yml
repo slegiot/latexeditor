@@ -1,0 +1,34 @@
+services:
+  # ── TeXLive Compilation Service ──
+  texlive:
+    image: texlive/texlive:latest
+    container_name: latexforge-texlive
+    volumes:
+      - ./compile:/workspace
+      - ./compile/jobs:/workspace/jobs
+    working_dir: /workspace
+    ports:
+      - "3001:3001"
+    command: >
+      bash -c "
+        echo '🔧 LatexForge TeXLive container ready.'
+        echo 'Mount .tex files into /workspace and compile.'
+        # Keep container running
+        tail -f /dev/null
+      "
+    restart: unless-stopped
+
+  # ── Next.js App (optional, for full-stack Docker dev) ──
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: latexforge-app
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    depends_on:
+      - texlive
+    profiles:
+      - full # Only runs with: docker compose --profile full up

@@ -1,0 +1,42 @@
+{
+  "name": "latexforge",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "ws": "node server/ws-server.mjs",
+    "dev:all": "node server/ws-server.mjs & next dev --turbopack"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.49.1",
+    "archiver": "^7.0.1",
+    "idb-keyval": "^6.2.1",
+    "isomorphic-git": "^1.27.1",
+    "lucide-react": "^0.474.0",
+    "next": "^15.1.0",
+    "posthog-js": "^1.347.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "resend": "^6.9.2",
+    "stripe": "^20.3.1",
+    "ws": "^8.18.0",
+    "y-monaco": "^0.1.6",
+    "y-protocols": "^1.0.6",
+    "y-websocket": "^2.1.0",
+    "yjs": "^13.6.20"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/archiver": "^7.0.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}
