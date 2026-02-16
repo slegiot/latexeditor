@@ -32,7 +32,7 @@ const tiers = [
             "Custom templates",
             "Priority support",
         ],
-        cta: "Start Free Trial",
+        cta: "Upgrade to Pro",
         href: "/signup?plan=pro",
         highlight: true,
     },
@@ -98,7 +98,7 @@ export default function PricingPage() {
                 <div className="max-w-3xl mx-auto text-center mb-16">
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-sm text-[var(--color-surface-700)] mb-6">
                         <Sparkles className="w-4 h-4 text-amber-400" />
-                        14-day free trial on Pro
+                        Start free, upgrade anytime
                     </div>
                     <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
                         Simple, transparent{" "}

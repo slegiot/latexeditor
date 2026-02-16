@@ -11,7 +11,6 @@ import {
     Shield,
     Check,
 } from "lucide-react";
-import { WaitlistForm } from "@/components/WaitlistForm";
 
 const features = [
     {
@@ -84,7 +83,7 @@ const tiers = [
             "Custom templates",
             "Priority support",
         ],
-        cta: "Start Free Trial",
+        cta: "Upgrade to Pro",
         href: "/signup?plan=pro",
         highlight: true,
     },
@@ -350,20 +349,7 @@ export default function LandingPage() {
                     </div>
                 </section>
 
-                {/* ── Waitlist CTA ── */}
-                <section className="mt-32 w-full max-w-2xl mx-auto text-center">
-                    <div className="p-8 rounded-2xl glass">
-                        <Sparkles className="w-8 h-8 text-amber-400 mx-auto mb-4" />
-                        <h2 className="text-2xl sm:text-3xl font-bold mb-3">
-                            Join the waitlist for early access
-                        </h2>
-                        <p className="text-sm text-[var(--color-surface-500)] mb-6">
-                            Be the first to try new AI features. We&apos;ll notify you when
-                            they land.
-                        </p>
-                        <WaitlistForm />
-                    </div>
-                </section>
+
             </main>
 
             {/* ── Footer ── */}
