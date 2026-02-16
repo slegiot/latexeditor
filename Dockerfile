@@ -33,13 +33,11 @@ WORKDIR /app
 # Install TeX Live for PDF compilation (comprehensive for chemistry, graphs, science, etc.)
 RUN apk add --no-cache \
     texlive \
-    texmf-dist \
-    texmf-dist-latexextra \
-    texmf-dist-fontsrecommended \
+    texmf-dist-most \
     texmf-dist-fontsextra \
-    texmf-dist-science \
-    texmf-dist-pictures \
     texmf-dist-bibtexextra \
+    texmf-dist-mathscience \
+    texmf-dist-pictures \
     && rm -rf /var/cache/apk/*
 
 ENV NODE_ENV=production
