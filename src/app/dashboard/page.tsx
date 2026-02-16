@@ -38,17 +38,17 @@ export default async function DashboardPage() {
                 }}
             />
 
-            <main className="flex-1 pt-24 pb-12 px-4 sm:px-6">
+            <main className="flex-1 pt-20 pb-8 px-4 sm:px-6">
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
                         <div>
-                            <h1 className="text-3xl font-bold">
+                            <h1 className="text-2xl font-bold">
                                 {profile?.full_name
                                     ? `Welcome back, ${profile.full_name.split(" ")[0]}`
                                     : "Your Projects"}
                             </h1>
-                            <p className="text-[var(--color-surface-600)] mt-1">
+                            <p className="text-[var(--color-surface-600)] text-sm mt-0.5">
                                 {projects?.length ?? 0} project
                                 {(projects?.length ?? 0) !== 1 ? "s" : ""}
                             </p>
@@ -76,14 +76,14 @@ export default async function DashboardPage() {
                         </div>
                     ) : (
                         /* Empty state */
-                        <div className="glass rounded-2xl p-12 text-center max-w-lg mx-auto animate-fade-in">
-                            <div className="w-16 h-16 rounded-2xl bg-[var(--color-accent-500)]/10 flex items-center justify-center mx-auto mb-6">
-                                <FileText className="w-8 h-8 text-[var(--color-accent-400)]" />
+                        <div className="glass rounded-xl p-8 text-center max-w-md mx-auto animate-fade-in">
+                            <div className="w-12 h-12 rounded-xl bg-[var(--color-accent-500)]/10 flex items-center justify-center mx-auto mb-4">
+                                <FileText className="w-6 h-6 text-[var(--color-accent-400)]" />
                             </div>
-                            <h2 className="text-xl font-semibold mb-2">
+                            <h2 className="text-lg font-semibold mb-1">
                                 No projects yet
                             </h2>
-                            <p className="text-[var(--color-surface-600)] text-sm mb-6">
+                            <p className="text-[var(--color-surface-600)] text-sm mb-4">
                                 Create your first LaTeX project to start writing and
                                 collaborating.
                             </p>

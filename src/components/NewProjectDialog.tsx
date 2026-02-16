@@ -80,7 +80,7 @@ export function NewProjectDialog() {
 
     return (
         <>
-            <button onClick={() => setOpen(true)} className="btn-primary">
+            <button onClick={() => setOpen(true)} className="btn-primary text-sm px-3 py-2">
                 <Plus className="w-4 h-4" />
                 New Project
             </button>
@@ -120,8 +120,8 @@ export function NewProjectDialog() {
                             <button
                                 onClick={() => setTab("blank")}
                                 className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "blank"
-                                        ? "bg-[var(--color-accent-500)] text-white"
-                                        : "hover:bg-[var(--color-glass-hover)]"
+                                    ? "bg-[var(--color-accent-500)] text-white"
+                                    : "hover:bg-[var(--color-glass-hover)]"
                                     }`}
                             >
                                 <FileText className="w-3.5 h-3.5" />
@@ -130,8 +130,8 @@ export function NewProjectDialog() {
                             <button
                                 onClick={() => setTab("template")}
                                 className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "template"
-                                        ? "bg-[var(--color-accent-500)] text-white"
-                                        : "hover:bg-[var(--color-glass-hover)]"
+                                    ? "bg-[var(--color-accent-500)] text-white"
+                                    : "hover:bg-[var(--color-glass-hover)]"
                                     }`}
                             >
                                 <LayoutTemplate className="w-3.5 h-3.5" />

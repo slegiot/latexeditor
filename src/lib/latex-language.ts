@@ -42,41 +42,14 @@ export const latexTokensProvider: languages.IMonarchLanguage = {
         { open: "(", close: ")", token: "delimiter.parenthesis" },
     ],
 
-    keywords: [
-        "documentclass",
-        "usepackage",
-        "begin",
-        "end",
-        "newcommand",
-        "renewcommand",
-        "newenvironment",
-        "input",
-        "include",
-        "includegraphics",
-        "bibliography",
-        "bibliographystyle",
-    ],
+    keywords:
+        "documentclass|usepackage|begin|end|newcommand|renewcommand|newenvironment|input|include|includegraphics|bibliography|bibliographystyle",
 
-    sectionings: [
-        "part",
-        "chapter",
-        "section",
-        "subsection",
-        "subsubsection",
-        "paragraph",
-        "subparagraph",
-    ],
+    sectionings:
+        "part|chapter|section|subsection|subsubsection|paragraph|subparagraph",
 
-    formatting: [
-        "textbf",
-        "textit",
-        "texttt",
-        "textrm",
-        "textsf",
-        "textsc",
-        "emph",
-        "underline",
-    ],
+    formatting:
+        "textbf|textit|texttt|textrm|textsf|textsc|emph|underline",
 
     tokenizer: {
         root: [
