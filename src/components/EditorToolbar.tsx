@@ -44,15 +44,14 @@ interface ToolbarProps {
     getContent: () => string;
 }
 
-/** Tiny tooltip wrapper for icon buttons with keyboard shortcut hints */
 function ToolbarButton({
     onClick,
     title,
     shortcut,
-    active,
-    accent,
     children,
     disabled,
+    active,
+    accent,
 }: {
     onClick: () => void;
     title: string;
@@ -66,25 +65,15 @@ function ToolbarButton({
         <button
             onClick={onClick}
             disabled={disabled}
-            className={`group relative flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-all
-                ${active
-                    ? "bg-[var(--color-accent-500)]/15 text-[var(--color-accent-400)]"
-                    : accent
-                        ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25"
-                        : "hover:bg-[var(--color-glass-hover)]"
-                }
+            aria-label={shortcut ? `${title} (${shortcut})` : title}
+            title={shortcut ? `${title} (${shortcut})` : title}
+            className={`btn-ghost text-xs gap-1.5 px-2.5 py-1.5 rounded-lg transition-all
+                ${active ? "bg-accent-500/15 text-accent-400" : ""}
+                ${accent ? "text-accent-400 hover:text-accent-300" : ""}
                 ${disabled ? "opacity-50 cursor-not-allowed" : ""}
             `}
-            aria-label={shortcut ? `${title} (${shortcut})` : title}
         >
             {children}
-            {/* Tooltip */}
-            <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2.5 py-1.5 rounded-lg bg-[var(--color-surface-200)] text-[var(--color-surface-900)] text-[11px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
-                {title}
-                {shortcut && (
-                    <span className="ml-1.5 text-[var(--color-surface-500)]">{shortcut}</span>
-                )}
-            </span>
         </button>
     );
 }
@@ -112,45 +101,45 @@ export function EditorToolbar({
     getContent,
 }: ToolbarProps) {
     return (
-        <header className="h-12 flex items-center justify-between px-3 border-b border-[var(--color-glass-border)] bg-[var(--color-surface-50)] shrink-0 z-20">
+        <header className="h-12 bg-surface-900/80 border-b border-surface-800/50 flex items-center justify-between px-3 gap-2 shrink-0 backdrop-blur-sm">
             {/* Left section */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 min-w-0">
                 <Link
                     href="/dashboard"
-                    className="flex items-center gap-1.5 text-sm text-[var(--color-surface-500)] hover:text-[var(--color-surface-900)] transition-colors"
                     aria-label="Back to Dashboard"
+                    className="btn-ghost text-xs gap-1 px-2 py-1.5"
                 >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span className="hidden sm:inline">Dashboard</span>
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span className="hidden md:inline">Dashboard</span>
                 </Link>
 
-                <div className="h-5 w-px bg-[var(--color-glass-border)]" />
+                <div className="w-px h-5 bg-surface-800/50" />
 
-                <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-[var(--color-accent-400)]" />
-                    <span className="text-sm font-semibold truncate max-w-[200px]">
-                        {projectName}
-                    </span>
+                <div className="flex items-center gap-1.5 text-sm text-surface-300 min-w-0">
+                    <FileText className="w-3.5 h-3.5 text-accent-400 shrink-0" />
+                    <span className="truncate font-medium max-w-[160px]">{projectName}</span>
                 </div>
             </div>
 
             {/* Center — actions */}
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-1">
                 {/* Compile */}
                 <button
                     onClick={onCompile}
                     disabled={compiling}
-                    className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold rounded-lg bg-gradient-to-r from-[var(--color-accent-500)] to-[var(--color-accent-600)] text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-emerald-500/15"
                     title="Compile (Ctrl+Enter)"
                     aria-label={compiling ? "Compiling document" : "Compile (Ctrl+Enter)"}
+                    className={`btn-primary text-xs gap-1.5 px-3 py-1.5 ${compiling ? "opacity-80" : ""}`}
                 >
                     {compiling ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 icon-spin" />
                     ) : (
                         <Play className="w-3.5 h-3.5" />
                     )}
-                    <span className="toolbar-label-hide">{compiling ? "Compiling…" : "Compile"}</span>
+                    <span className="hidden sm:inline">{compiling ? "Compiling…" : "Compile"}</span>
                 </button>
+
+                <div className="w-px h-5 bg-surface-800/50 mx-1" />
 
                 {/* Save */}
                 <ToolbarButton
@@ -160,10 +149,8 @@ export function EditorToolbar({
                     shortcut="⌘S"
                 >
                     <Save className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline toolbar-label-hide">Save</span>
+                    <span className="hidden lg:inline">Save</span>
                 </ToolbarButton>
-
-                <div className="h-5 w-px bg-[var(--color-glass-border)] mx-1" />
 
                 {/* Git Menu */}
                 <GitMenu
@@ -176,7 +163,7 @@ export function EditorToolbar({
                 {/* Export Menu */}
                 <ExportMenu projectId={projectId} pdfUrl={pdfUrl} />
 
-                <div className="h-5 w-px bg-[var(--color-glass-border)] mx-1" />
+                <div className="w-px h-5 bg-surface-800/50 mx-1 hidden sm:block" />
 
                 {/* History */}
                 <ToolbarButton
@@ -185,7 +172,7 @@ export function EditorToolbar({
                     shortcut="⌘⇧H"
                 >
                     <History className="w-3.5 h-3.5" />
-                    <span className="hidden lg:inline toolbar-label-hide">History</span>
+                    <span className="hidden lg:inline">History</span>
                 </ToolbarButton>
 
                 {/* Files */}
@@ -195,7 +182,7 @@ export function EditorToolbar({
                     shortcut="⌘\"
                 >
                     <FolderOpen className="w-3.5 h-3.5" />
-                    <span className="hidden lg:inline toolbar-label-hide">Files</span>
+                    <span className="hidden lg:inline">Files</span>
                 </ToolbarButton>
 
                 {/* Settings */}
@@ -204,21 +191,19 @@ export function EditorToolbar({
                     title="Editor Settings"
                 >
                     <Settings className="w-3.5 h-3.5" />
-                    <span className="hidden lg:inline toolbar-label-hide">Settings</span>
+                    <span className="hidden lg:inline">Settings</span>
                 </ToolbarButton>
-
-                <div className="h-5 w-px bg-[var(--color-glass-border)] mx-1" />
 
                 {/* AI */}
                 <ToolbarButton
                     onClick={onToggleAI}
                     title="AI Assistant"
-                    accent={errorCount > 0}
+                    accent
                 >
-                    <Sparkles className={`w-3.5 h-3.5 ${errorCount > 0 ? "text-amber-400" : ""}`} />
-                    <span className="hidden sm:inline toolbar-label-hide">AI</span>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span className="hidden lg:inline">AI</span>
                     {errorCount > 0 && (
-                        <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-red-500/20 text-red-400 min-w-[18px] text-center">
+                        <span className="px-1.5 py-0.5 rounded-full bg-danger/20 text-danger text-[10px] font-bold leading-none">
                             {errorCount}
                         </span>
                     )}
@@ -226,46 +211,40 @@ export function EditorToolbar({
             </div>
 
             {/* Right — presence + status */}
-            <div className="flex items-center gap-3">
-                {/* Presence avatars */}
+            <div className="flex items-center gap-2">
                 <PresenceAvatars peers={peers} connected={connected} />
-
-                {/* Theme toggle */}
                 <ThemeToggle />
 
                 {offlineDraft && (
-                    <div
-                        className="flex items-center gap-1 text-xs text-amber-400"
-                        title="Working offline — draft saved locally"
-                    >
+                    <div className="flex items-center gap-1 text-warning text-xs" title="Working offline — draft saved locally">
                         <WifiOff className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">Offline</span>
                     </div>
                 )}
 
-                <div className="flex items-center gap-1.5 text-xs text-[var(--color-surface-500)]">
+                <div className="flex items-center gap-1 text-xs">
                     {saveStatus === "saved" && (
                         <>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                            <span className="hidden sm:inline">Saved</span>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                            <span className="text-surface-500 hidden sm:inline">Saved</span>
                         </>
                     )}
                     {saveStatus === "unsaved" && (
                         <>
-                            <div className="w-2 h-2 rounded-full bg-amber-400" />
-                            <span className="hidden sm:inline">Unsaved</span>
+                            <span className="text-warning text-lg leading-none">●</span>
+                            <span className="text-warning hidden sm:inline">Unsaved</span>
                         </>
                     )}
                     {saveStatus === "saving" && (
                         <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span className="hidden sm:inline">Saving…</span>
+                            <Loader2 className="w-3.5 h-3.5 text-surface-400 icon-spin" />
+                            <span className="text-surface-400 hidden sm:inline">Saving…</span>
                         </>
                     )}
                     {saveStatus === "error" && (
                         <>
-                            <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-                            <span className="hidden sm:inline text-red-400">Failed</span>
+                            <AlertTriangle className="w-3.5 h-3.5 text-danger" />
+                            <span className="text-danger hidden sm:inline">Failed</span>
                         </>
                     )}
                 </div>

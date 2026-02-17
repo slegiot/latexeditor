@@ -1,67 +1,61 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Loader2, Check } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowRight } from "lucide-react";
 
 export function WaitlistForm() {
     const [email, setEmail] = useState("");
-    const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-    const [message, setMessage] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!email.trim() || status === "loading") return;
+        setLoading(true);
+        setError(null);
 
-        setStatus("loading");
         try {
             const res = await fetch("/api/waitlist", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: email.trim() }),
+                body: JSON.stringify({ email }),
             });
 
-            const data = await res.json();
-
             if (!res.ok) {
+                const data = await res.json();
                 throw new Error(data.error || "Failed to join waitlist");
             }
 
-            setStatus("success");
-            setMessage(data.message || "You're on the list!");
-            setEmail("");
-        } catch (err: any) {
-            setStatus("error");
-            setMessage(err.message || "Something went wrong");
+            setSuccess(true);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "An error occurred");
+        } finally {
+            setLoading(false);
         }
     };
 
-    if (status === "success") {
+    if (success) {
         return (
-            <div className="flex items-center justify-center gap-2 text-emerald-400 py-3">
-                <Check className="w-5 h-5" />
-                <span className="text-sm font-medium">{message}</span>
+            <div className="flex items-center gap-2.5 text-accent-400 animate-scale-in">
+                <CheckCircle2 className="w-5 h-5" />
+                <p className="text-sm font-medium">You&apos;re on the list! We&apos;ll be in touch soon.</p>
             </div>
         );
     }
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
             <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@university.edu"
+                placeholder="Enter your email"
                 required
-                className="input-field flex-1 text-sm"
-                disabled={status === "loading"}
+                className="input-field sm:max-w-xs"
             />
-            <button
-                type="submit"
-                disabled={status === "loading" || !email.trim()}
-                className="btn-primary text-sm px-6 py-2.5 whitespace-nowrap disabled:opacity-50"
-            >
-                {status === "loading" ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+            <button type="submit" disabled={loading} className="btn-primary shrink-0">
+                {loading ? (
+                    <Loader2 className="w-4 h-4 icon-spin" />
                 ) : (
                     <>
                         Join Waitlist
@@ -69,9 +63,7 @@ export function WaitlistForm() {
                     </>
                 )}
             </button>
-            {status === "error" && (
-                <p className="text-xs text-red-400 sm:absolute sm:bottom-0 sm:left-0">{message}</p>
-            )}
+            {error && <p className="text-xs text-danger">{error}</p>}
         </form>
     );
 }

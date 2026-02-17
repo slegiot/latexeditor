@@ -38,7 +38,7 @@ export default async function SettingsPage() {
     };
 
     return (
-        <div className="min-h-dvh flex flex-col">
+        <div className="min-h-screen bg-surface-950">
             <Navbar
                 user={{
                     email: user.email ?? "",
@@ -46,21 +46,19 @@ export default async function SettingsPage() {
                     avatarUrl: profile?.avatar_url ?? "",
                 }}
             />
-            <main className="flex-1 pt-24 pb-12 px-4 sm:px-6">
-                <div className="max-w-2xl mx-auto">
-                    <h1 className="text-3xl font-bold mb-2">Settings</h1>
-                    <p className="text-[var(--color-surface-600)] mb-8">
-                        Customise your LatexForge experience.
-                    </p>
-
-                    <SettingsForm
-                        initialSettings={settings || defaultSettings}
-                        profile={{
-                            fullName: profile?.full_name || "",
-                            email: user.email || "",
-                        }}
-                    />
+            <main className="max-w-3xl mx-auto px-6 py-10 animate-fade-in">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-white">Settings</h1>
+                    <p className="text-surface-400 mt-1">Customise your LatexForge experience.</p>
                 </div>
+
+                <SettingsForm
+                    initialSettings={settings || defaultSettings}
+                    profile={{
+                        fullName: profile?.full_name || "",
+                        email: user.email || "",
+                    }}
+                />
             </main>
         </div>
     );

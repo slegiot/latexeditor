@@ -1,13 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PostHogProvider } from "@/components/PostHogProvider";
-
-const inter = Inter({
-    subsets: ["latin"],
-    variable: "--font-sans",
-});
 
 export const metadata: Metadata = {
     title: "LatexForge — Collaborative LaTeX Editor",
@@ -24,18 +18,20 @@ export default function RootLayout({
     return (
         <html lang="en" className="dark" suppressHydrationWarning>
             <head>
+                <link rel="preconnect" href="https://fonts.googleapis.com" />
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+                <link
+                    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+                    rel="stylesheet"
+                />
+                {/* Prevent FOUC: apply saved theme before paint */}
                 <script
                     dangerouslySetInnerHTML={{
-                        __html: `
-              (function() {
-                const theme = localStorage.getItem('latexforge-theme') || 'dark';
-                document.documentElement.className = theme;
-              })();
-            `,
+                        __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='light'){document.documentElement.classList.add('light');document.documentElement.classList.remove('dark')}else{document.documentElement.classList.add('dark');document.documentElement.classList.remove('light')}}catch(e){}})();`,
                     }}
                 />
             </head>
-            <body className={`${inter.variable} antialiased`}>
+            <body className="font-sans antialiased bg-surface-950 text-surface-100 min-h-screen">
                 <PostHogProvider>
                     <ErrorBoundary>
                         {children}

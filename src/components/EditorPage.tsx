@@ -611,7 +611,7 @@ export function EditorPage({
     }, []);
 
     return (
-        <div className="h-dvh flex flex-col bg-[var(--color-surface-50)]">
+        <div className="h-screen flex flex-col bg-surface-950 overflow-hidden">
             <EditorToolbar
                 projectId={project.id}
                 projectName={project.name}
@@ -642,26 +642,28 @@ export function EditorPage({
                 getContent={getContent}
             />
 
-            <div className="flex-1 flex min-h-0 relative">
+            <div className="flex-1 flex overflow-hidden relative">
                 {/* Monaco Editor */}
                 <div
                     className="flex flex-col min-w-0"
                     style={{ width: showPdf ? `${dividerPos}%` : "100%" }}
                 >
-                    <div className="h-9 flex items-center px-3 gap-4 border-b border-[var(--color-glass-border)] bg-[var(--color-surface-100)] text-xs shrink-0">
-                        <div className="flex items-center gap-1.5 text-[var(--color-accent-400)]">
+                    {/* Tab bar */}
+                    <div className="h-9 bg-surface-900/60 border-b border-surface-800/50 flex items-center justify-between px-3 shrink-0">
+                        <div className="flex items-center gap-1.5 text-xs text-surface-400">
                             <FileIcon />
                             <span className="font-medium">main.tex</span>
                         </div>
                         <button
                             onClick={() => setShowPdf((prev) => !prev)}
-                            className="ml-auto text-[var(--color-surface-500)] hover:text-[var(--color-surface-900)] transition-colors"
+                            className="btn-ghost text-[11px] px-2 py-1"
                         >
                             {showPdf ? "Hide Preview" : "Show Preview"}
                         </button>
                     </div>
 
-                    <div className="flex-1 min-h-0">
+                    {/* Editor area */}
+                    <div className="flex-1 overflow-hidden">
                         <Editor
                             language={LATEX_LANGUAGE_ID}
                             defaultValue=""
@@ -685,7 +687,7 @@ export function EditorPage({
                                 padding: { top: 12 },
                             }}
                             loading={
-                                <div className="flex items-center justify-center h-full gap-2 text-[var(--color-surface-500)]">
+                                <div className="flex items-center justify-center h-full gap-2 text-surface-500">
                                     <Spinner />
                                     <span className="text-sm">Loading editor…</span>
                                 </div>
@@ -695,8 +697,8 @@ export function EditorPage({
 
                     {/* Error panel */}
                     {errors.length > 0 && (
-                        <div className="max-h-36 overflow-y-auto border-t border-[var(--color-glass-border)] bg-[var(--color-surface-100)]">
-                            <div className="px-3 py-1.5 text-xs font-medium text-[var(--color-surface-500)] border-b border-[var(--color-glass-border)]">
+                        <div className="border-t border-surface-800/50 bg-surface-900/80 max-h-40 overflow-y-auto shrink-0">
+                            <div className="px-3 py-1.5 text-xs font-semibold text-surface-400 border-b border-surface-800/30 sticky top-0 bg-surface-900/90 backdrop-blur-sm">
                                 Problems ({errors.length})
                             </div>
                             {errors.map((err, i) => (
@@ -710,26 +712,13 @@ export function EditorPage({
                                         });
                                         editorRef.current?.focus();
                                     }}
-                                    className="w-full flex items-start gap-2 px-3 py-1.5 text-xs hover:bg-[var(--color-glass-hover)] transition-colors text-left"
+                                    className="w-full text-left px-3 py-1.5 text-xs hover:bg-surface-800/30 transition-colors flex items-center gap-2"
                                 >
-                                    {err.severity === "error" ? (
-                                        <span className="mt-0.5 w-3.5 h-3.5 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-                                        </span>
-                                    ) : err.severity === "warning" ? (
-                                        <span className="mt-0.5 w-3.5 h-3.5 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                                        </span>
-                                    ) : (
-                                        <span className="mt-0.5 w-3.5 h-3.5 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                                        </span>
-                                    )}
-                                    <span className="text-[var(--color-surface-600)]">
-                                        <span className="text-[var(--color-surface-400)]">
-                                            Ln {err.line}:
-                                        </span>{" "}
-                                        {err.message}
+                                    <span className={`shrink-0 font-mono ${err.severity === "error" ? "text-danger" : "text-warning"}`}>
+                                        [{err.severity}]
+                                    </span>
+                                    <span className="text-surface-400 truncate">
+                                        Ln {err.line}: {err.message}
                                     </span>
                                 </button>
                             ))}
@@ -751,53 +740,35 @@ export function EditorPage({
                 {showPdf && (
                     <div
                         onMouseDown={handleMouseDown}
-                        className="w-1.5 cursor-col-resize bg-[var(--color-glass-border)] hover:bg-[var(--color-accent-500)]/50 active:bg-[var(--color-accent-500)] transition-colors shrink-0"
-                    />
+                        className="w-1.5 bg-surface-800/50 hover:bg-accent-500/30 active:bg-accent-500/50 transition-colors cursor-col-resize shrink-0 relative group"
+                    >
+                        <div className="absolute inset-y-0 -left-1 -right-1" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-8 bg-surface-600 rounded-full group-hover:bg-accent-400 transition-colors" />
+                    </div>
                 )}
 
                 {/* PDF Preview */}
                 {showPdf && (
                     <div
-                        className="flex flex-col min-w-0"
+                        className="flex flex-col min-w-0 bg-surface-900/40"
                         style={{ width: `${100 - dividerPos}%` }}
                     >
-                        <div className="h-9 flex items-center px-3 border-b border-[var(--color-glass-border)] bg-[var(--color-surface-100)] text-xs shrink-0">
-                            <span className="font-medium text-[var(--color-surface-500)]">
+                        <div className="h-9 bg-surface-900/60 border-b border-surface-800/50 flex items-center px-3 shrink-0">
+                            <span className="text-xs text-surface-400 font-medium">
                                 PDF Preview
                             </span>
                         </div>
-                        <div className="flex-1 min-h-0 bg-[#525659]">
+                        <div className="flex-1 overflow-hidden">
                             {pdfUrl ? (
                                 <iframe
                                     src={pdfUrl}
-                                    className="w-full h-full border-0"
+                                    className="w-full h-full border-none"
                                     title="PDF Preview"
                                 />
                             ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-[var(--color-surface-400)] gap-3">
-                                    <div className="w-16 h-16 rounded-2xl bg-[var(--color-surface-200)]/10 flex items-center justify-center">
-                                        <svg
-                                            width="32"
-                                            height="32"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="1.5"
-                                            className="opacity-50"
-                                        >
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                            <polyline points="14 2 14 8 20 8" />
-                                            <line x1="16" y1="13" x2="8" y2="13" />
-                                            <line x1="16" y1="17" x2="8" y2="17" />
-                                            <polyline points="10 9 9 9 8 9" />
-                                        </svg>
-                                    </div>
-                                    <p className="text-sm">
-                                        Press{" "}
-                                        <kbd className="px-1.5 py-0.5 rounded bg-[var(--color-surface-200)]/20 font-mono text-xs">
-                                            Ctrl+Enter
-                                        </kbd>{" "}
-                                        to compile
+                                <div className="flex items-center justify-center h-full">
+                                    <p className="text-sm text-surface-600">
+                                        Press <kbd className="px-1.5 py-0.5 rounded bg-surface-800 text-surface-400 text-xs font-mono">Ctrl+Enter</kbd> to compile
                                     </p>
                                 </div>
                             )}
@@ -874,6 +845,7 @@ function FileIcon() {
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
+            className="text-accent-400"
         >
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
             <polyline points="14 2 14 8 20 8" />
@@ -883,19 +855,19 @@ function FileIcon() {
 
 function Spinner() {
     return (
-        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+        <svg viewBox="0 0 24 24" fill="none" width="16" height="16" className="icon-spin">
             <circle
-                className="opacity-25"
                 cx="12"
                 cy="12"
                 r="10"
                 stroke="currentColor"
                 strokeWidth="4"
+                opacity="0.25"
             />
             <path
-                className="opacity-75"
                 fill="currentColor"
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                opacity="0.75"
             />
         </svg>
     );

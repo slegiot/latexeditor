@@ -12,6 +12,7 @@ import {
     Github,
     ArrowRight,
     Loader2,
+    CheckCircle2,
 } from "lucide-react";
 
 export default function SignUpPage() {
@@ -60,18 +61,16 @@ export default function SignUpPage() {
 
     if (success) {
         return (
-            <div className="min-h-dvh flex items-center justify-center px-4 py-12">
-                <div className="w-full max-w-md text-center animate-scale-in">
+            <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-surface-950">
+                <div className="w-full max-w-sm text-center animate-scale-in">
                     <div className="glass rounded-2xl p-8">
-                        <div className="w-16 h-16 rounded-2xl bg-[var(--color-accent-500)]/10 flex items-center justify-center mx-auto mb-6">
-                            <Mail className="w-8 h-8 text-[var(--color-accent-400)]" />
+                        <div className="w-16 h-16 rounded-2xl bg-accent-500/15 flex items-center justify-center mx-auto mb-5">
+                            <Mail className="w-8 h-8 text-accent-400" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2">Check your email</h2>
-                        <p className="text-[var(--color-surface-600)] text-sm">
+                        <h2 className="text-xl font-bold text-white mb-3">Check your email</h2>
+                        <p className="text-sm text-surface-400 leading-relaxed">
                             We&apos;ve sent a confirmation link to{" "}
-                            <span className="text-[var(--color-accent-400)] font-medium">
-                                {email}
-                            </span>
+                            <span className="text-white font-medium">{email}</span>
                             . Click the link to activate your account.
                         </p>
                     </div>
@@ -81,31 +80,30 @@ export default function SignUpPage() {
     }
 
     return (
-        <div className="min-h-dvh flex items-center justify-center px-4 py-12">
-            <div className="w-full max-w-md animate-scale-in">
+        <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-surface-950">
+            {/* Decorative gradient orbs */}
+            <div className="fixed inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent-500/5 rounded-full blur-3xl" />
+                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-600/5 rounded-full blur-3xl" />
+            </div>
+
+            <div className="w-full max-w-sm relative z-10 animate-fade-in">
                 {/* Logo */}
                 <div className="text-center mb-8">
-                    <Link
-                        href="/"
-                        className="inline-flex items-center gap-2 text-xl font-bold mb-2"
-                    >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--color-accent-400)] to-[var(--color-accent-600)] flex items-center justify-center">
-                            <FileText className="w-5 h-5 text-white" />
-                        </div>
-                        <span className="gradient-text">LatexForge</span>
+                    <Link href="/" className="inline-flex items-center gap-2.5 text-white font-bold text-xl mb-3">
+                        <FileText className="w-7 h-7 text-accent-400" />
+                        <span>LatexForge</span>
                     </Link>
-                    <p className="text-[var(--color-surface-600)] text-sm mt-2">
-                        Create your free account
-                    </p>
+                    <p className="text-surface-500 text-sm">Create your free account</p>
                 </div>
 
                 {/* Card */}
-                <div className="glass rounded-2xl p-8">
+                <div className="glass rounded-2xl p-7 animate-slide-up" style={{ animationDelay: "100ms" }}>
                     {/* GitHub OAuth */}
                     <button
                         type="button"
                         onClick={handleGitHubLogin}
-                        className="btn-secondary w-full py-3 mb-6"
+                        className="btn-secondary w-full justify-center py-2.5 mb-6"
                     >
                         <Github className="w-5 h-5" />
                         Continue with GitHub
@@ -113,81 +111,61 @@ export default function SignUpPage() {
 
                     {/* Divider */}
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="flex-1 h-px bg-[var(--color-glass-border)]" />
-                        <span className="text-xs text-[var(--color-surface-500)] uppercase tracking-wider">
-                            or
-                        </span>
-                        <div className="flex-1 h-px bg-[var(--color-glass-border)]" />
+                        <hr className="flex-1 border-surface-800" />
+                        <span className="text-xs text-surface-600 uppercase tracking-wider">or</span>
+                        <hr className="flex-1 border-surface-800" />
                     </div>
 
                     {/* Email Form */}
                     <form onSubmit={handleSignUp} className="space-y-4">
                         <div>
-                            <label
-                                htmlFor="fullName"
-                                className="block text-sm font-medium text-[var(--color-surface-700)] mb-1.5"
-                            >
+                            <label htmlFor="fullName" className="block text-sm font-medium text-surface-300 mb-1.5">
                                 Full Name
                             </label>
-                            <div className="relative">
-                                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-surface-500)]" />
-                                <input
-                                    id="fullName"
-                                    type="text"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    placeholder="Jane Doe"
-                                    className="input-field pl-10"
-                                    required
-                                />
-                            </div>
+                            <input
+                                id="fullName"
+                                type="text"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                placeholder="Jane Doe"
+                                required
+                                className="input-field"
+                            />
                         </div>
 
                         <div>
-                            <label
-                                htmlFor="email"
-                                className="block text-sm font-medium text-[var(--color-surface-700)] mb-1.5"
-                            >
+                            <label htmlFor="email" className="block text-sm font-medium text-surface-300 mb-1.5">
                                 Email
                             </label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-surface-500)]" />
-                                <input
-                                    id="email"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="you@university.edu"
-                                    className="input-field pl-10"
-                                    required
-                                />
-                            </div>
+                            <input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="you@university.edu"
+                                required
+                                className="input-field"
+                            />
                         </div>
 
                         <div>
-                            <label
-                                htmlFor="password"
-                                className="block text-sm font-medium text-[var(--color-surface-700)] mb-1.5"
-                            >
+                            <label htmlFor="password" className="block text-sm font-medium text-surface-300 mb-1.5">
                                 Password
                             </label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-surface-500)]" />
-                                <input
-                                    id="password"
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Min. 6 characters"
-                                    className="input-field pl-10"
-                                    minLength={6}
-                                    required
-                                />
-                            </div>
+                            <input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Min. 6 characters"
+                                minLength={6}
+                                required
+                                className="input-field"
+                            />
                         </div>
 
                         {error && (
-                            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                            <div className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">
                                 {error}
                             </div>
                         )}
@@ -195,10 +173,10 @@ export default function SignUpPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="btn-primary w-full justify-center py-2.5 mt-2"
                         >
                             {loading ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <Loader2 className="w-5 h-5 icon-spin" />
                             ) : (
                                 <>
                                     Create Account
@@ -210,12 +188,9 @@ export default function SignUpPage() {
                 </div>
 
                 {/* Footer */}
-                <p className="text-center text-sm text-[var(--color-surface-500)] mt-6">
+                <p className="text-center text-sm text-surface-500 mt-6">
                     Already have an account?{" "}
-                    <Link
-                        href="/login"
-                        className="text-[var(--color-accent-400)] hover:text-[var(--color-accent-300)] font-medium transition-colors"
-                    >
+                    <Link href="/login" className="text-accent-400 hover:text-accent-300 font-medium transition-colors">
                         Sign in
                     </Link>
                 </p>

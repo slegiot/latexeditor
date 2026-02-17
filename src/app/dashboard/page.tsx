@@ -29,7 +29,7 @@ export default async function DashboardPage() {
         .single();
 
     return (
-        <div className="min-h-dvh flex flex-col bg-[var(--color-surface-0)]">
+        <div className="min-h-screen bg-surface-950">
             <Navbar
                 user={{
                     email: user.email ?? "",
@@ -38,17 +38,17 @@ export default async function DashboardPage() {
                 }}
             />
 
-            <main className="flex-1 pt-24 pb-12 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-7xl mx-auto">
+            <main className="pt-20 pb-12 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-6xl mx-auto animate-fade-in">
                     {/* Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 animate-fade-in">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                         <div>
-                            <h1 className="text-3xl font-extrabold tracking-tight">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-white">
                                 {profile?.full_name
                                     ? `Welcome back, ${profile.full_name.split(" ")[0]} 👋`
                                     : "Your Projects"}
                             </h1>
-                            <p className="text-[var(--color-surface-600)] text-sm mt-1">
+                            <p className="text-surface-500 text-sm mt-1">
                                 {projects?.length ?? 0} project
                                 {(projects?.length ?? 0) !== 1 ? "s" : ""}
                                 {" · "}
@@ -59,18 +59,17 @@ export default async function DashboardPage() {
                         <NewProjectDialog />
                     </div>
 
-                    {/* Search bar (client-side filtering handled natively) */}
+                    {/* Search bar */}
                     {projects && projects.length > 0 && (
-                        <div className="relative mb-6 max-w-md animate-fade-in" style={{ animationDelay: "0.1s", animationFillMode: "both" }}>
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-surface-500)]" />
+                        <div className="relative mb-8">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500" />
                             <input
                                 type="text"
                                 placeholder="Search projects..."
-                                className="input-field pl-10"
                                 id="project-search"
                                 aria-label="Search projects"
+                                className="input-field pl-10 max-w-md"
                                 onInput={(e) => {
-                                    // Client-side filtering via data attributes
                                     const query = (e.target as HTMLInputElement).value.toLowerCase();
                                     const cards = document.querySelectorAll('[data-project-card]');
                                     cards.forEach((card) => {
@@ -84,13 +83,11 @@ export default async function DashboardPage() {
 
                     {/* Projects Grid */}
                     {error ? (
-                        <div className="card-glass p-10 text-center animate-fade-in">
-                            <p className="text-red-400 text-sm">
-                                Failed to load projects. Please try again.
-                            </p>
+                        <div className="glass rounded-2xl p-8 text-center">
+                            <p className="text-danger">Failed to load projects. Please try again.</p>
                         </div>
                     ) : projects && projects.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                             {projects.map((project, i) => (
                                 <ProjectCard
                                     key={project.id}
@@ -100,15 +97,12 @@ export default async function DashboardPage() {
                             ))}
                         </div>
                     ) : (
-                        /* Empty state */
-                        <div className="card-glass p-12 text-center max-w-md mx-auto animate-fade-in">
-                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--color-accent-500)]/20 to-[var(--color-accent-700)]/10 flex items-center justify-center mx-auto mb-5">
-                                <FileText className="w-8 h-8 text-[var(--color-accent-400)]" />
+                        <div className="glass rounded-2xl p-12 text-center max-w-md mx-auto animate-slide-up">
+                            <div className="w-16 h-16 rounded-2xl bg-surface-800 flex items-center justify-center mx-auto mb-5">
+                                <FileText className="w-8 h-8 text-surface-500" />
                             </div>
-                            <h2 className="text-xl font-bold mb-2">
-                                No projects yet
-                            </h2>
-                            <p className="text-[var(--color-surface-600)] text-sm mb-6 leading-relaxed">
+                            <h2 className="text-lg font-semibold text-white mb-2">No projects yet</h2>
+                            <p className="text-sm text-surface-400 mb-6">
                                 Create your first LaTeX project to start writing and
                                 collaborating with your team.
                             </p>

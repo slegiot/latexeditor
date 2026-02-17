@@ -1,143 +1,135 @@
 "use client";
 
-import React from "react";
-import { FileText, Clock, Trash2, MoreVertical, Globe, Lock, Share2 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
-import { deleteProject } from "@/app/dashboard/actions";
-import { ShareDialog } from "@/components/ShareDialog";
 import Link from "next/link";
-
-interface Project {
-    id: string;
-    name: string;
-    description: string;
-    is_public: boolean;
-    created_at: string;
-    updated_at: string;
-}
+import { useState, useRef, useEffect } from "react";
+import {
+    FileText,
+    Clock,
+    Globe,
+    Lock,
+    Trash2,
+    MoreVertical,
+} from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import { ShareDialog } from "./ShareDialog";
 
 interface ProjectCardProps {
-    project: Project;
-    index: number;
+    project: {
+        id: string;
+        name: string;
+        description: string;
+        updated_at: string;
+        is_public: boolean;
+    };
+    index?: number;
 }
 
-export const ProjectCard = React.memo(function ProjectCard({ project, index }: ProjectCardProps) {
+export function ProjectCard({ project, index = 0 }: ProjectCardProps) {
     const [menuOpen, setMenuOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
 
     useEffect(() => {
-        function handleClickOutside(e: MouseEvent) {
+        const handleClickOutside = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
                 setMenuOpen(false);
             }
-        }
+        };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     const handleDelete = async () => {
-        if (!confirm("Delete this project? This cannot be undone.")) return;
+        if (!confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
         setDeleting(true);
-        await deleteProject(project.id);
+        const supabase = createClient();
+        await supabase.from("projects").delete().eq("id", project.id);
+        router.refresh();
     };
 
-    const timeAgo = (dateStr: string) => {
+    const getRelativeTime = (dateStr: string) => {
         const diff = Date.now() - new Date(dateStr).getTime();
-        const minutes = Math.floor(diff / 60000);
-        if (minutes < 1) return "Just now";
-        if (minutes < 60) return `${minutes}m ago`;
-        const hours = Math.floor(minutes / 60);
-        if (hours < 24) return `${hours}h ago`;
-        const days = Math.floor(hours / 24);
-        if (days < 30) return `${days}d ago`;
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return "Just now";
+        if (mins < 60) return `${mins}m ago`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs}h ago`;
+        const days = Math.floor(hrs / 24);
+        if (days < 7) return `${days}d ago`;
         return new Date(dateStr).toLocaleDateString();
     };
 
     return (
-        <Link href={`/editor/${project.id}`} className="block" data-project-card data-project-name={project.name}>
-            <div
-                className={`group relative card-glass p-5 hover:translate-y-[-2px] cursor-pointer ${deleting ? "opacity-50 pointer-events-none" : ""
-                    }`}
-                style={{ animation: `fade-in 0.4s ease ${0.05 * index}s both` }}
-            >
-                {/* Header */}
-                <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--color-accent-500)]/15 to-[var(--color-accent-700)]/10 flex items-center justify-center shrink-0 group-hover:from-[var(--color-accent-500)]/25 group-hover:to-[var(--color-accent-700)]/15 transition-all">
-                        <FileText className="w-5 h-5 text-[var(--color-accent-400)]" />
+        <div
+            data-project-card
+            data-project-name={project.name}
+            className="glass rounded-2xl p-5 card-hover group animate-slide-up relative"
+            style={{ animationDelay: `${index * 60}ms` }}
+        >
+            {/* Header */}
+            <div className="flex items-start justify-between mb-3">
+                <Link
+                    href={`/editor/${project.id}`}
+                    className="flex items-center gap-2.5 text-white font-semibold hover:text-accent-400 transition-colors flex-1 min-w-0"
+                >
+                    <div className="w-9 h-9 rounded-xl bg-accent-500/10 flex items-center justify-center shrink-0">
+                        <FileText className="w-4 h-4 text-accent-400" />
                     </div>
+                    <span className="truncate">{project.name}</span>
+                </Link>
 
-                    {/* Menu */}
-                    <div className="relative flex items-center gap-1" ref={menuRef}>
-                        <div onClick={(e) => e.preventDefault()}>
+                {/* Menu */}
+                <div ref={menuRef} className="relative">
+                    <button
+                        onClick={() => setMenuOpen(!menuOpen)}
+                        className="btn-ghost p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Project options"
+                    >
+                        <MoreVertical className="w-4 h-4" />
+                    </button>
+                    {menuOpen && (
+                        <div className="absolute right-0 top-full mt-1 w-40 glass rounded-xl py-1 z-20 shadow-xl animate-scale-in origin-top-right">
                             <ShareDialog
                                 projectId={project.id}
                                 projectName={project.name}
                                 isPublic={project.is_public}
                             />
+                            <button
+                                onClick={handleDelete}
+                                disabled={deleting}
+                                className="btn-danger w-full justify-start rounded-none px-3 py-2 text-sm"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                {deleting ? "Deleting…" : "Delete"}
+                            </button>
                         </div>
-                        <button
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setMenuOpen(!menuOpen);
-                            }}
-                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-[var(--color-glass-hover)] transition-all"
-                            aria-label="Project options"
-                        >
-                            <MoreVertical className="w-4 h-4 text-[var(--color-surface-500)]" />
-                        </button>
-                        {menuOpen && (
-                            <div className="absolute right-0 top-full mt-1 w-44 glass rounded-xl overflow-hidden animate-scale-in origin-top-right shadow-[var(--shadow-card)] z-10">
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleDelete();
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                    Delete Project
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Title */}
-                <h3 className="font-bold text-base mb-1 truncate group-hover:text-[var(--color-accent-400)] transition-colors">
-                    {project.name}
-                </h3>
-
-                {/* Description */}
-                {project.description && (
-                    <p className="text-sm text-[var(--color-surface-600)] line-clamp-2 mb-4 leading-relaxed">
-                        {project.description}
-                    </p>
-                )}
-
-                {/* Footer */}
-                <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--color-glass-border)]">
-                    <div className="flex items-center gap-1.5 text-xs text-[var(--color-surface-500)]">
-                        <Clock className="w-3.5 h-3.5" />
-                        {timeAgo(project.updated_at)}
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-[var(--color-surface-500)]">
-                        {project.is_public ? (
-                            <>
-                                <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                                <span className="text-emerald-400">Public</span>
-                            </>
-                        ) : (
-                            <>
-                                <Lock className="w-3.5 h-3.5" />
-                                Private
-                            </>
-                        )}
-                    </div>
+                    )}
                 </div>
             </div>
-        </Link>
+
+            {/* Description */}
+            {project.description && (
+                <p className="text-sm text-surface-500 line-clamp-2 mb-4">
+                    {project.description}
+                </p>
+            )}
+
+            {/* Footer */}
+            <div className="flex items-center justify-between text-xs text-surface-600">
+                <div className="flex items-center gap-1.5">
+                    <Clock className="w-3 h-3" />
+                    {getRelativeTime(project.updated_at)}
+                </div>
+                <div className="flex items-center gap-1" title={project.is_public ? "Public" : "Private"}>
+                    {project.is_public ? (
+                        <Globe className="w-3 h-3 text-accent-500" />
+                    ) : (
+                        <Lock className="w-3 h-3" />
+                    )}
+                </div>
+            </div>
+        </div>
     );
-});
+}

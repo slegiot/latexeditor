@@ -18,115 +18,106 @@ interface NavbarProps {
         email: string;
         fullName: string;
         avatarUrl: string;
-    };
+    } | null;
 }
 
 export function Navbar({ user }: NavbarProps) {
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
-    const supabase = createClient();
 
     useEffect(() => {
-        function handleClickOutside(e: MouseEvent) {
+        const handleClickOutside = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
                 setMenuOpen(false);
             }
-        }
+        };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     const handleSignOut = async () => {
+        const supabase = createClient();
         await supabase.auth.signOut();
-        router.push("/");
-        router.refresh();
+        router.push("/login");
     };
 
-    const initials = user.fullName
-        ? user.fullName
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .toUpperCase()
-            .slice(0, 2)
-        : user.email?.[0]?.toUpperCase() ?? "U";
-
     return (
-        <nav className="fixed top-0 inset-x-0 z-50 glass">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-                {/* Logo */}
-                <Link
-                    href="/dashboard"
-                    className="flex items-center gap-2 text-lg font-bold"
-                >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--color-accent-400)] to-[var(--color-accent-600)] flex items-center justify-center">
-                        <FileText className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="gradient-text hidden sm:inline">LatexForge</span>
+        <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-surface-800/50 h-14">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+                <Link href="/" className="flex items-center gap-2 text-white font-bold text-lg">
+                    <FileText className="w-5 h-5 text-accent-400" />
+                    <span>LatexForge</span>
                 </Link>
 
-                {/* Right side */}
                 <div className="flex items-center gap-3">
                     <ThemeToggle />
 
-                    {/* User menu */}
-                    <div className="relative" ref={menuRef}>
-                        <button
-                            onClick={() => setMenuOpen(!menuOpen)}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-xl glass glass-hover transition-all"
-                        >
-                            {user.avatarUrl ? (
-                                <img
-                                    src={user.avatarUrl}
-                                    alt=""
-                                    className="w-7 h-7 rounded-lg object-cover"
-                                />
-                            ) : (
-                                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[var(--color-accent-500)] to-[var(--color-accent-700)] flex items-center justify-center text-white text-xs font-bold">
-                                    {initials}
-                                </div>
-                            )}
-                            <span className="text-sm font-medium hidden sm:inline max-w-[120px] truncate">
-                                {user.fullName || user.email}
-                            </span>
-                            <ChevronDown
-                                className={`w-4 h-4 text-[var(--color-surface-500)] transition-transform ${menuOpen ? "rotate-180" : ""
-                                    }`}
-                            />
-                        </button>
+                    {user ? (
+                        <div ref={menuRef} className="relative">
+                            <button
+                                onClick={() => setMenuOpen(!menuOpen)}
+                                className="flex items-center gap-2 btn-ghost py-1.5 px-2"
+                                aria-label="User menu"
+                            >
+                                {user.avatarUrl ? (
+                                    <img
+                                        src={user.avatarUrl}
+                                        alt={user.fullName}
+                                        width={28}
+                                        height={28}
+                                        className="w-7 h-7 rounded-full ring-2 ring-surface-700"
+                                    />
+                                ) : (
+                                    <span className="w-7 h-7 rounded-full bg-accent-500/20 text-accent-400 flex items-center justify-center text-sm font-semibold">
+                                        {user.fullName?.[0] || user.email[0]}
+                                    </span>
+                                )}
+                                <span className="text-sm text-surface-300 hidden sm:block max-w-[120px] truncate">
+                                    {user.fullName || user.email}
+                                </span>
+                                <ChevronDown className="w-3.5 h-3.5 text-surface-500" />
+                            </button>
 
-                        {/* Dropdown */}
-                        {menuOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-56 glass rounded-xl overflow-hidden animate-scale-in origin-top-right shadow-[var(--shadow-card)]">
-                                <div className="px-4 py-3 border-b border-[var(--color-glass-border)]">
-                                    <p className="text-sm font-medium truncate">
-                                        {user.fullName || "User"}
-                                    </p>
-                                    <p className="text-xs text-[var(--color-surface-500)] truncate">
-                                        {user.email}
-                                    </p>
-                                </div>
-                                <div className="py-1">
+                            {menuOpen && (
+                                <div className="absolute right-0 top-full mt-2 w-56 glass rounded-xl py-1 shadow-2xl animate-scale-in origin-top-right z-50">
+                                    <div className="px-4 py-3 border-b border-surface-800/50">
+                                        <p className="text-sm font-medium text-white truncate">{user.fullName || "User"}</p>
+                                        <p className="text-xs text-surface-500 truncate">{user.email}</p>
+                                    </div>
+                                    <Link
+                                        href="/dashboard"
+                                        onClick={() => setMenuOpen(false)}
+                                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-300 hover:bg-surface-800/50 hover:text-white transition-colors"
+                                    >
+                                        <FileText className="w-4 h-4" />
+                                        My Projects
+                                    </Link>
                                     <Link
                                         href="/settings"
-                                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-[var(--color-glass-hover)] transition-colors"
                                         onClick={() => setMenuOpen(false)}
+                                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-300 hover:bg-surface-800/50 hover:text-white transition-colors"
                                     >
-                                        <Settings className="w-4 h-4 text-[var(--color-surface-500)]" />
+                                        <Settings className="w-4 h-4" />
                                         Settings
                                     </Link>
+                                    <hr className="border-surface-800/50 my-1" />
                                     <button
                                         onClick={handleSignOut}
-                                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 w-full transition-colors"
                                     >
                                         <LogOut className="w-4 h-4" />
                                         Sign Out
                                     </button>
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <Link href="/login" className="btn-ghost text-sm">Sign In</Link>
+                            <Link href="/signup" className="btn-primary text-sm">Get Started</Link>
+                        </div>
+                    )}
                 </div>
             </div>
         </nav>

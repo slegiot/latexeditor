@@ -80,19 +80,17 @@ export function SettingsForm({ initialSettings, profile }: SettingsFormProps) {
     ];
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
             {/* Profile */}
-            <section className="glass rounded-2xl p-5 space-y-4">
-                <div className="flex items-center gap-2 mb-1">
-                    <User className="w-4 h-4 text-[var(--color-accent-400)]" />
-                    <h2 className="text-sm font-semibold">Profile</h2>
+            <section className="glass rounded-2xl p-6">
+                <div className="flex items-center gap-2 mb-5">
+                    <User className="w-4 h-4 text-accent-400" />
+                    <h2 className="text-white font-semibold">Profile</h2>
                 </div>
 
-                <div className="space-y-3">
-                    <div>
-                        <label className="text-xs text-[var(--color-surface-500)] mb-1 block">
-                            Display Name
-                        </label>
+                <div className="space-y-4">
+                    <div className="space-y-1.5">
+                        <label className="text-sm text-surface-400 font-medium">Display Name</label>
                         <input
                             type="text"
                             value={name}
@@ -100,64 +98,62 @@ export function SettingsForm({ initialSettings, profile }: SettingsFormProps) {
                             className="input-field"
                         />
                     </div>
-                    <div>
-                        <label className="text-xs text-[var(--color-surface-500)] mb-1 block">
-                            Email
-                        </label>
+                    <div className="space-y-1.5">
+                        <label className="text-sm text-surface-400 font-medium">Email</label>
                         <input
                             type="email"
                             value={profile.email}
                             disabled
-                            className="input-field opacity-50 cursor-not-allowed"
+                            className="input-field opacity-60 cursor-not-allowed"
                         />
                     </div>
                 </div>
             </section>
 
             {/* Theme */}
-            <section className="glass rounded-2xl p-5 space-y-4">
-                <div className="flex items-center gap-2 mb-1">
-                    <Moon className="w-4 h-4 text-[var(--color-accent-400)]" />
-                    <h2 className="text-sm font-semibold">Theme</h2>
+            <section className="glass rounded-2xl p-6">
+                <div className="flex items-center gap-2 mb-5">
+                    <Moon className="w-4 h-4 text-accent-400" />
+                    <h2 className="text-white font-semibold">Theme</h2>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex gap-2">
                     {themeOptions.map(({ key, label, icon: Icon }) => (
                         <button
                             key={key}
                             onClick={() => setTheme(key)}
-                            className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${settings.theme === key
-                                    ? "border-[var(--color-accent-500)] bg-[var(--color-accent-500)]/10"
-                                    : "border-[var(--color-glass-border)] hover:border-[var(--color-surface-400)]"
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex-1 justify-center ${settings.theme === key
+                                    ? "bg-accent-500/20 text-accent-400 ring-1 ring-accent-500/30"
+                                    : "bg-surface-800/50 text-surface-400 hover:bg-surface-800 hover:text-surface-300"
                                 }`}
                         >
-                            <Icon className="w-5 h-5" />
-                            <span className="text-xs font-medium">{label}</span>
+                            <Icon className="w-4 h-4" />
+                            <span>{label}</span>
                         </button>
                     ))}
                 </div>
             </section>
 
             {/* Editor */}
-            <section className="glass rounded-2xl p-5 space-y-4">
-                <div className="flex items-center gap-2 mb-1">
-                    <Type className="w-4 h-4 text-[var(--color-accent-400)]" />
-                    <h2 className="text-sm font-semibold">Editor</h2>
+            <section className="glass rounded-2xl p-6">
+                <div className="flex items-center gap-2 mb-5">
+                    <Type className="w-4 h-4 text-accent-400" />
+                    <h2 className="text-white font-semibold">Editor</h2>
                 </div>
 
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <label className="text-sm">Font Size</label>
-                        <div className="flex items-center gap-2">
+                <div className="space-y-5">
+                    <div className="space-y-1.5">
+                        <label className="text-sm text-surface-400 font-medium">Font Size</label>
+                        <div className="flex items-center gap-3">
                             <input
                                 type="range"
                                 min={10}
                                 max={24}
                                 value={settings.font_size}
                                 onChange={(e) => update("font_size", parseInt(e.target.value))}
-                                className="w-24 accent-[var(--color-accent-500)]"
+                                className="flex-1 h-1.5 bg-surface-800 rounded-full appearance-none cursor-pointer accent-emerald-500"
                             />
-                            <span className="text-xs font-mono w-6 text-right">{settings.font_size}</span>
+                            <span className="text-sm text-surface-300 font-mono w-8 text-right">{settings.font_size}</span>
                         </div>
                     </div>
 
@@ -183,53 +179,53 @@ export function SettingsForm({ initialSettings, profile }: SettingsFormProps) {
             </section>
 
             {/* Auto-save */}
-            <section className="glass rounded-2xl p-5 space-y-4">
-                <div className="flex items-center gap-2 mb-1">
-                    <Timer className="w-4 h-4 text-[var(--color-accent-400)]" />
-                    <h2 className="text-sm font-semibold">Auto-Save</h2>
+            <section className="glass rounded-2xl p-6">
+                <div className="flex items-center gap-2 mb-5">
+                    <Timer className="w-4 h-4 text-accent-400" />
+                    <h2 className="text-white font-semibold">Auto-Save</h2>
                 </div>
 
-                <Toggle
-                    label="Enable Auto-Save"
-                    checked={settings.auto_save}
-                    onChange={(v) => update("auto_save", v)}
-                />
+                <div className="space-y-4">
+                    <Toggle
+                        label="Enable Auto-Save"
+                        checked={settings.auto_save}
+                        onChange={(v) => update("auto_save", v)}
+                    />
 
-                {settings.auto_save && (
-                    <div className="flex items-center justify-between pl-1">
-                        <label className="text-sm text-[var(--color-surface-600)]">
-                            Interval (seconds)
-                        </label>
-                        <select
-                            value={settings.auto_save_interval}
-                            onChange={(e) => update("auto_save_interval", parseInt(e.target.value))}
-                            className="px-3 py-1.5 text-xs rounded-lg bg-[var(--color-surface-100)] border border-[var(--color-glass-border)] focus:outline-none focus:border-[var(--color-accent-500)]"
-                        >
-                            <option value={15}>15s</option>
-                            <option value={30}>30s</option>
-                            <option value={60}>1 min</option>
-                            <option value={120}>2 min</option>
-                            <option value={300}>5 min</option>
-                        </select>
-                    </div>
-                )}
+                    {settings.auto_save && (
+                        <div className="space-y-1.5">
+                            <label className="text-sm text-surface-400 font-medium">Interval (seconds)</label>
+                            <select
+                                value={settings.auto_save_interval}
+                                onChange={(e) => update("auto_save_interval", parseInt(e.target.value))}
+                                className="input-field text-sm"
+                            >
+                                <option value={15}>15s</option>
+                                <option value={30}>30s</option>
+                                <option value={60}>1 min</option>
+                                <option value={120}>2 min</option>
+                                <option value={300}>5 min</option>
+                            </select>
+                        </div>
+                    )}
+                </div>
             </section>
 
             {/* Export */}
-            <section className="glass rounded-2xl p-5 space-y-4">
-                <div className="flex items-center gap-2 mb-1">
-                    <FileText className="w-4 h-4 text-[var(--color-accent-400)]" />
-                    <h2 className="text-sm font-semibold">Default Export</h2>
+            <section className="glass rounded-2xl p-6">
+                <div className="flex items-center gap-2 mb-5">
+                    <FileText className="w-4 h-4 text-accent-400" />
+                    <h2 className="text-white font-semibold">Default Export</h2>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="flex gap-2">
                     {(["pdf", "zip"] as const).map((fmt) => (
                         <button
                             key={fmt}
                             onClick={() => update("default_export", fmt)}
-                            className={`p-3 rounded-xl border transition-all text-sm font-medium uppercase ${settings.default_export === fmt
-                                    ? "border-[var(--color-accent-500)] bg-[var(--color-accent-500)]/10"
-                                    : "border-[var(--color-glass-border)] hover:border-[var(--color-surface-400)]"
+                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all uppercase ${settings.default_export === fmt
+                                    ? "bg-accent-500/20 text-accent-400 ring-1 ring-accent-500/30"
+                                    : "bg-surface-800/50 text-surface-400 hover:bg-surface-800"
                                 }`}
                         >
                             {fmt}
@@ -238,20 +234,22 @@ export function SettingsForm({ initialSettings, profile }: SettingsFormProps) {
                 </div>
             </section>
 
-            {/* Save */}
-            <button
-                onClick={handleSave}
-                disabled={saving || saved}
-                className="btn-primary w-full !py-3"
-            >
-                {saving ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
-                ) : saved ? (
-                    <><Check className="w-4 h-4" /> Saved</>
-                ) : (
-                    <><Save className="w-4 h-4" /> Save Settings</>
-                )}
-            </button>
+            {/* Save Button */}
+            <div className="flex justify-end pt-2">
+                <button
+                    onClick={handleSave}
+                    disabled={saving || saved}
+                    className="btn-primary text-sm"
+                >
+                    {saving ? (
+                        <><Loader2 className="w-4 h-4 icon-spin" /> Saving…</>
+                    ) : saved ? (
+                        <><Check className="w-4 h-4" /> Saved</>
+                    ) : (
+                        <><Save className="w-4 h-4" /> Save Settings</>
+                    )}
+                </button>
+            </div>
         </div>
     );
 }
@@ -270,20 +268,20 @@ function Toggle({
     return (
         <div className="flex items-center justify-between">
             <div>
-                <span className="text-sm">{label}</span>
+                <span className="text-sm text-white">{label}</span>
                 {description && (
-                    <p className="text-[10px] text-[var(--color-surface-500)]">{description}</p>
+                    <p className="text-xs text-surface-500 mt-0.5">{description}</p>
                 )}
             </div>
             <button
+                role="switch"
+                aria-checked={checked}
                 onClick={() => onChange(!checked)}
-                className={`w-10 h-5 rounded-full transition-colors relative ${checked ? "bg-[var(--color-accent-500)]" : "bg-[var(--color-surface-400)]"
+                className={`relative w-10 h-5 rounded-full transition-colors ${checked ? "bg-accent-500" : "bg-surface-700"
                     }`}
             >
-                <div
-                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${checked ? "left-5.5" : "left-0.5"
-                        }`}
-                />
+                <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-5" : "translate-x-0"
+                    }`} />
             </button>
         </div>
     );

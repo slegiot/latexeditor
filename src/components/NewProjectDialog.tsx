@@ -80,73 +80,60 @@ export function NewProjectDialog() {
 
     return (
         <>
-            <button onClick={() => setOpen(true)} className="btn-primary text-sm px-3 py-2">
+            <button onClick={() => setOpen(true)} className="btn-primary">
                 <Plus className="w-4 h-4" />
                 New Project
             </button>
 
-            {/* Modal Overlay */}
             {open && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     {/* Backdrop */}
-                    <div
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                        onClick={() => setOpen(false)}
-                    />
+                    <div className="backdrop-overlay" onClick={() => setOpen(false)} />
 
                     {/* Dialog */}
                     <div
                         ref={dialogRef}
-                        className="relative w-full max-w-lg glass rounded-2xl p-6 animate-scale-in shadow-[var(--shadow-card)]"
+                        className="relative z-50 w-full max-w-lg glass rounded-2xl shadow-2xl animate-scale-in"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-[var(--color-accent-500)]/10 flex items-center justify-center">
-                                    <FileText className="w-5 h-5 text-[var(--color-accent-400)]" />
-                                </div>
-                                <h2 className="text-lg font-semibold">New Project</h2>
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-800/50">
+                            <div className="flex items-center gap-2.5">
+                                <FileText className="w-5 h-5 text-accent-400" />
+                                <h2 className="text-lg font-semibold text-white">New Project</h2>
                             </div>
-                            <button
-                                onClick={() => setOpen(false)}
-                                className="p-2 rounded-lg hover:bg-[var(--color-glass-hover)] transition-colors"
-                            >
-                                <X className="w-4 h-4 text-[var(--color-surface-500)]" />
+                            <button onClick={() => setOpen(false)} className="btn-ghost p-1.5" aria-label="Close">
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
 
                         {/* Tabs */}
-                        <div className="flex gap-1 mb-5 p-1 rounded-xl bg-[var(--color-surface-100)]">
+                        <div className="flex border-b border-surface-800/50">
                             <button
                                 onClick={() => setTab("blank")}
-                                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "blank"
-                                    ? "bg-[var(--color-accent-500)] text-white"
-                                    : "hover:bg-[var(--color-glass-hover)]"
+                                className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors border-b-2 ${tab === "blank"
+                                        ? "border-accent-500 text-accent-400"
+                                        : "border-transparent text-surface-500 hover:text-surface-300"
                                     }`}
                             >
-                                <FileText className="w-3.5 h-3.5" />
+                                <FileText className="w-4 h-4" />
                                 Blank
                             </button>
                             <button
                                 onClick={() => setTab("template")}
-                                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "template"
-                                    ? "bg-[var(--color-accent-500)] text-white"
-                                    : "hover:bg-[var(--color-glass-hover)]"
+                                className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors border-b-2 ${tab === "template"
+                                        ? "border-accent-500 text-accent-400"
+                                        : "border-transparent text-surface-500 hover:text-surface-300"
                                     }`}
                             >
-                                <LayoutTemplate className="w-3.5 h-3.5" />
+                                <LayoutTemplate className="w-4 h-4" />
                                 Templates
                             </button>
                         </div>
 
                         {tab === "blank" ? (
-                            /* Blank Form */
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            <form onSubmit={handleSubmit} className="p-6 space-y-4">
                                 <div>
-                                    <label
-                                        htmlFor="project-name"
-                                        className="block text-sm font-medium text-[var(--color-surface-700)] mb-1.5"
-                                    >
+                                    <label htmlFor="project-name" className="block text-sm font-medium text-surface-300 mb-1.5">
                                         Project Name
                                     </label>
                                     <input
@@ -155,20 +142,14 @@ export function NewProjectDialog() {
                                         name="name"
                                         type="text"
                                         placeholder="My Research Paper"
-                                        className="input-field"
                                         required
+                                        className="input-field"
                                     />
                                 </div>
 
                                 <div>
-                                    <label
-                                        htmlFor="project-desc"
-                                        className="block text-sm font-medium text-[var(--color-surface-700)] mb-1.5"
-                                    >
-                                        Description{" "}
-                                        <span className="text-[var(--color-surface-500)] font-normal">
-                                            (optional)
-                                        </span>
+                                    <label htmlFor="project-desc" className="block text-sm font-medium text-surface-300 mb-1.5">
+                                        Description <span className="text-surface-600">(optional)</span>
                                     </label>
                                     <textarea
                                         id="project-desc"
@@ -180,26 +161,18 @@ export function NewProjectDialog() {
                                 </div>
 
                                 {error && (
-                                    <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                                    <div className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">
                                         {error}
                                     </div>
                                 )}
 
-                                <div className="flex items-center gap-3 pt-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setOpen(false)}
-                                        className="btn-secondary flex-1"
-                                    >
+                                <div className="flex justify-end gap-3 pt-2">
+                                    <button type="button" onClick={() => setOpen(false)} className="btn-ghost">
                                         Cancel
                                     </button>
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
+                                    <button type="submit" disabled={loading} className="btn-primary">
                                         {loading ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <Loader2 className="w-4 h-4 icon-spin" />
                                         ) : (
                                             <>
                                                 <Plus className="w-4 h-4" />
@@ -210,17 +183,16 @@ export function NewProjectDialog() {
                                 </div>
                             </form>
                         ) : (
-                            /* Template Gallery */
-                            <div>
+                            <div className="p-6">
                                 {loading ? (
                                     <div className="flex items-center justify-center py-12">
-                                        <Loader2 className="w-6 h-6 animate-spin text-[var(--color-surface-500)]" />
+                                        <Loader2 className="w-6 h-6 text-accent-400 icon-spin" />
                                     </div>
                                 ) : (
                                     <TemplatesGallery onSelect={handleTemplateSelect} />
                                 )}
                                 {error && (
-                                    <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                                    <div className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2 mt-4">
                                         {error}
                                     </div>
                                 )}

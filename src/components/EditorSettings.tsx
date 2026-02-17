@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Settings, Check, ChevronDown } from "lucide-react";
+import { X, Settings, Check } from "lucide-react";
 
 interface EditorSettingsProps {
     open: boolean;
@@ -62,61 +62,46 @@ export function EditorSettings({ open, onClose }: EditorSettingsProps) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={onClose}
-            />
+            <div onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
             {/* Modal */}
-            <div className="relative w-full max-w-lg mx-4 glass rounded-xl shadow-[var(--shadow-card)] animate-scale-in overflow-hidden">
+            <div className="glass relative z-10 w-full max-w-lg mx-4 rounded-2xl shadow-2xl animate-scale-in">
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-glass-border)]">
+                <div className="flex items-center justify-between p-5 border-b border-surface-800/50">
                     <div className="flex items-center gap-2">
-                        <Settings className="w-5 h-5 text-[var(--color-accent-400)]" />
-                        <h2 className="text-lg font-semibold">Editor Settings</h2>
+                        <Settings className="w-4 h-4 text-accent-400" />
+                        <h2 className="text-white font-semibold">Editor Settings</h2>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-1.5 rounded-lg hover:bg-[var(--color-glass-hover)] transition-colors"
-                    >
-                        <X className="w-5 h-5 text-[var(--color-surface-500)]" />
+                    <button onClick={onClose} className="btn-ghost p-1" aria-label="Close">
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="px-5 py-4 space-y-5 max-h-[60vh] overflow-y-auto">
+                <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto">
                     {/* Compiler Section */}
-                    <div>
-                        <label className="block text-sm font-medium mb-2">
-                            LaTeX Compiler
-                        </label>
-                        <div className="relative">
-                            <select
-                                value={settings.compiler}
-                                onChange={(e) =>
-                                    setSettings({
-                                        ...settings,
-                                        compiler: e.target.value as SettingsState["compiler"],
-                                    })
-                                }
-                                className="input-field appearance-none pr-10"
-                            >
-                                <option value="pdflatex">pdfLaTeX (default)</option>
-                                <option value="xelatex">XeLaTeX (Unicode)</option>
-                                <option value="lualatex">LuaLaTeX (Lua)</option>
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-surface-500)] pointer-events-none" />
-                        </div>
-                        <p className="text-xs text-[var(--color-surface-500)] mt-1.5">
-                            Choose the LaTeX engine for PDF compilation
-                        </p>
+                    <div className="space-y-1.5">
+                        <label className="text-sm text-white font-medium">LaTeX Compiler</label>
+                        <select
+                            value={settings.compiler}
+                            onChange={(e) =>
+                                setSettings({
+                                    ...settings,
+                                    compiler: e.target.value as SettingsState["compiler"],
+                                })
+                            }
+                            className="input-field text-sm w-full"
+                        >
+                            <option value="pdflatex">pdfLaTeX (default)</option>
+                            <option value="xelatex">XeLaTeX (Unicode)</option>
+                            <option value="lualatex">LuaLaTeX (Lua)</option>
+                        </select>
+                        <p className="text-xs text-surface-500">Choose the LaTeX engine for PDF compilation</p>
                     </div>
 
                     {/* Font Size */}
-                    <div>
-                        <label className="block text-sm font-medium mb-2">
-                            Font Size
-                        </label>
+                    <div className="space-y-1.5">
+                        <label className="text-sm text-white font-medium">Font Size</label>
                         <div className="flex items-center gap-3">
                             <input
                                 type="range"
@@ -129,27 +114,23 @@ export function EditorSettings({ open, onClose }: EditorSettingsProps) {
                                         fontSize: parseInt(e.target.value),
                                     })
                                 }
-                                className="flex-1 accent-[var(--color-accent-400)]"
+                                className="flex-1 h-1.5 bg-surface-800 rounded-full appearance-none cursor-pointer accent-emerald-500"
                             />
-                            <span className="text-sm font-mono w-10 text-center">
-                                {settings.fontSize}
-                            </span>
+                            <span className="text-sm text-surface-300 font-mono w-8 text-right">{settings.fontSize}</span>
                         </div>
                     </div>
 
                     {/* Tab Size */}
-                    <div>
-                        <label className="block text-sm font-medium mb-2">
-                            Tab Size
-                        </label>
+                    <div className="space-y-1.5">
+                        <label className="text-sm text-white font-medium">Tab Size</label>
                         <div className="flex gap-2">
                             {[2, 4, 8].map((size) => (
                                 <button
                                     key={size}
                                     onClick={() => setSettings({ ...settings, tabSize: size })}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${settings.tabSize === size
-                                            ? "bg-[var(--color-accent-500)] text-white"
-                                            : "glass hover:bg-[var(--color-glass-hover)]"
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${settings.tabSize === size
+                                            ? "bg-accent-500/20 text-accent-400 ring-1 ring-accent-500/30"
+                                            : "bg-surface-800/50 text-surface-400 hover:bg-surface-800"
                                         }`}
                                 >
                                     {size} spaces
@@ -159,7 +140,7 @@ export function EditorSettings({ open, onClose }: EditorSettingsProps) {
                     </div>
 
                     {/* Toggle Options */}
-                    <div className="space-y-3">
+                    <div className="space-y-1 border-t border-surface-800/50 pt-4">
                         <ToggleOption
                             label="Word Wrap"
                             description="Wrap long lines in the editor"
@@ -188,27 +169,21 @@ export function EditorSettings({ open, onClose }: EditorSettingsProps) {
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between px-5 py-4 border-t border-[var(--color-glass-border)] bg-[var(--color-surface-100)]">
+                <div className="flex items-center justify-between p-5 border-t border-surface-800/50">
                     <button
                         onClick={() => setSettings(defaultSettings)}
-                        className="text-sm text-[var(--color-surface-500)] hover:text-[var(--color-surface-900)] transition-colors"
+                        className="btn-ghost text-xs text-surface-500"
                     >
                         Reset to defaults
                     </button>
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={onClose}
-                            className="btn-secondary text-sm px-4 py-2"
-                        >
+                        <button onClick={onClose} className="btn-secondary text-xs">
                             Cancel
                         </button>
-                        <button
-                            onClick={handleSave}
-                            className="btn-primary text-sm px-4 py-2"
-                        >
+                        <button onClick={handleSave} className="btn-primary text-xs">
                             {saved ? (
                                 <>
-                                    <Check className="w-4 h-4" />
+                                    <Check className="w-3.5 h-3.5" />
                                     Saved
                                 </>
                             ) : (
@@ -231,24 +206,20 @@ interface ToggleOptionProps {
 
 function ToggleOption({ label, description, checked, onChange }: ToggleOptionProps) {
     return (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between py-2.5">
             <div>
-                <p className="text-sm font-medium">{label}</p>
-                <p className="text-xs text-[var(--color-surface-500)]">{description}</p>
+                <p className="text-sm text-white">{label}</p>
+                <p className="text-xs text-surface-500">{description}</p>
             </div>
             <button
                 role="switch"
                 aria-checked={checked}
                 onClick={() => onChange(!checked)}
-                className={`relative w-11 h-6 rounded-full transition-colors ${checked
-                        ? "bg-[var(--color-accent-500)]"
-                        : "bg-[var(--color-surface-400)]"
+                className={`relative w-10 h-5 rounded-full transition-colors ${checked ? "bg-accent-500" : "bg-surface-700"
                     }`}
             >
-                <span
-                    className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${checked ? "translate-x-5" : "translate-x-0"
-                        }`}
-                />
+                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-5" : "translate-x-0"
+                    }`} />
             </button>
         </div>
     );

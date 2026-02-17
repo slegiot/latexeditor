@@ -71,21 +71,17 @@ const comparison = [
 
 export default function PricingPage() {
     return (
-        <div className="min-h-dvh flex flex-col">
+        <div className="min-h-screen bg-surface-950">
             {/* Nav */}
-            <nav className="fixed top-0 inset-x-0 z-50 glass">
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2 text-lg font-bold">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--color-accent-400)] to-[var(--color-accent-600)] flex items-center justify-center">
-                            <FileText className="w-4 h-4 text-white" />
-                        </div>
-                        <span className="gradient-text">LatexForge</span>
+            <nav className="fixed top-0 inset-x-0 z-50 glass border-b border-surface-800/50">
+                <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+                    <Link href="/" className="flex items-center gap-2 text-white font-bold text-lg">
+                        <FileText className="w-5 h-5 text-accent-400" />
+                        <span>LatexForge</span>
                     </Link>
                     <div className="flex items-center gap-3">
-                        <Link href="/login" className="btn-secondary text-sm px-4 py-2">
-                            Sign In
-                        </Link>
-                        <Link href="/signup" className="btn-primary text-sm px-4 py-2">
+                        <Link href="/login" className="btn-ghost text-sm">Sign In</Link>
+                        <Link href="/signup" className="btn-primary text-sm gap-1.5">
                             Get Started
                             <ArrowRight className="w-4 h-4" />
                         </Link>
@@ -93,64 +89,54 @@ export default function PricingPage() {
                 </div>
             </nav>
 
-            <main className="flex-1 px-6 pt-32 pb-20">
+            <main className="pt-28 pb-20 px-6">
                 {/* Header */}
-                <div className="max-w-3xl mx-auto text-center mb-16">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-sm text-[var(--color-surface-700)] mb-6">
-                        <Sparkles className="w-4 h-4 text-amber-400" />
+                <div className="text-center max-w-2xl mx-auto mb-16 animate-fade-in">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-500/10 text-accent-400 text-xs font-medium mb-4">
+                        <Sparkles className="w-3.5 h-3.5" />
                         Start free, upgrade anytime
                     </div>
-                    <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
-                        Simple, transparent{" "}
-                        <span className="gradient-text">pricing</span>
+                    <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
+                        Simple, transparent pricing
                     </h1>
-                    <p className="text-lg text-[var(--color-surface-600)] max-w-xl mx-auto">
+                    <p className="text-lg text-surface-400">
                         Start free, upgrade when you need unlimited AI power and team features.
                         No hidden fees.
                     </p>
                 </div>
 
                 {/* Tier Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-24">
-                    {tiers.map((tier) => (
+                <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-24">
+                    {tiers.map((tier, i) => (
                         <div
                             key={tier.name}
-                            className={`relative p-6 rounded-2xl transition-all duration-300 ${tier.highlight
-                                ? "glass border-2 border-[var(--color-accent-400)] shadow-[0_0_40px_rgba(16,185,129,0.15)]"
-                                : "glass glass-hover"
+                            className={`relative glass rounded-2xl p-6 flex flex-col animate-slide-up ${tier.highlight
+                                    ? "ring-2 ring-accent-500/50 shadow-lg shadow-accent-500/10"
+                                    : ""
                                 }`}
+                            style={{ animationDelay: `${i * 100}ms` }}
                         >
                             {tier.highlight && (
-                                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold bg-[var(--color-accent-500)] text-white">
+                                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-accent-500 to-accent-600 text-white text-xs font-semibold">
                                     Most Popular
                                 </span>
                             )}
-                            <h3 className="text-xl font-bold mb-1">{tier.name}</h3>
-                            <p className="text-sm text-[var(--color-surface-500)] mb-5">
-                                {tier.description}
-                            </p>
-                            <div className="flex items-baseline gap-1 mb-6">
-                                <span className="text-5xl font-extrabold">{tier.price}</span>
-                                <span className="text-sm text-[var(--color-surface-500)]">
-                                    {tier.period}
-                                </span>
+                            <h3 className="text-lg font-bold text-white">{tier.name}</h3>
+                            <p className="text-sm text-surface-400 mt-1">{tier.description}</p>
+                            <div className="mt-4 mb-6">
+                                <span className="text-4xl font-bold text-white">{tier.price}</span>
+                                <span className="text-sm text-surface-500 ml-1">{tier.period}</span>
                             </div>
                             <Link
                                 href={tier.href}
-                                className={`block w-full text-center py-3 px-4 rounded-lg text-sm font-medium transition-colors mb-6 ${tier.highlight
-                                    ? "bg-[var(--color-accent-500)] text-white hover:bg-[var(--color-accent-600)]"
-                                    : "glass glass-hover"
-                                    }`}
+                                className={`${tier.highlight ? "btn-primary" : "btn-secondary"} text-sm justify-center w-full`}
                             >
                                 {tier.cta}
                             </Link>
-                            <ul className="space-y-3">
+                            <ul className="mt-6 space-y-2.5 flex-1">
                                 {tier.features.map((f) => (
-                                    <li
-                                        key={f}
-                                        className="flex items-start gap-2 text-sm text-[var(--color-surface-600)]"
-                                    >
-                                        <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                                    <li key={f} className="flex items-center gap-2 text-sm text-surface-300">
+                                        <Check className={`w-4 h-4 shrink-0 ${tier.highlight ? "text-accent-400" : "text-surface-500"}`} />
                                         {f}
                                     </li>
                                 ))}
@@ -160,40 +146,25 @@ export default function PricingPage() {
                 </div>
 
                 {/* Comparison Table */}
-                <div className="max-w-5xl mx-auto">
-                    <h2 className="text-2xl font-bold text-center mb-8">
-                        Feature comparison
-                    </h2>
-                    <div className="overflow-x-auto rounded-2xl glass">
-                        <table className="w-full text-sm">
+                <div className="max-w-4xl mx-auto">
+                    <h2 className="text-2xl font-bold text-white text-center mb-8">Feature comparison</h2>
+                    <div className="glass rounded-2xl overflow-hidden">
+                        <table className="w-full">
                             <thead>
-                                <tr className="border-b border-[var(--color-glass-border)]">
-                                    <th className="text-left p-4 font-medium text-[var(--color-surface-500)]">
-                                        Feature
-                                    </th>
-                                    <th className="text-center p-4 font-semibold">Free</th>
-                                    <th className="text-center p-4 font-semibold text-[var(--color-accent-400)]">
-                                        Pro
-                                    </th>
-                                    <th className="text-center p-4 font-semibold">Team</th>
+                                <tr className="border-b border-surface-800/50">
+                                    <th className="text-left text-xs font-semibold text-surface-400 px-6 py-3 uppercase tracking-wider">Feature</th>
+                                    <th className="text-center text-xs font-semibold text-surface-400 px-4 py-3 uppercase tracking-wider">Free</th>
+                                    <th className="text-center text-xs font-semibold text-accent-400 px-4 py-3 uppercase tracking-wider">Pro</th>
+                                    <th className="text-center text-xs font-semibold text-surface-400 px-4 py-3 uppercase tracking-wider">Team</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {comparison.map((row, i) => (
-                                    <tr
-                                        key={row.feature}
-                                        className={
-                                            i < comparison.length - 1
-                                                ? "border-b border-[var(--color-glass-border)]"
-                                                : ""
-                                        }
-                                    >
-                                        <td className="p-4 font-medium">{row.feature}</td>
-                                        <td className="p-4 text-center text-[var(--color-surface-500)]">
-                                            {row.free}
-                                        </td>
-                                        <td className="p-4 text-center">{row.pro}</td>
-                                        <td className="p-4 text-center">{row.team}</td>
+                                    <tr key={row.feature} className={`border-b border-surface-800/30 ${i % 2 === 0 ? "bg-surface-900/20" : ""}`}>
+                                        <td className="text-sm text-surface-300 px-6 py-3 font-medium">{row.feature}</td>
+                                        <td className="text-sm text-surface-500 px-4 py-3 text-center">{row.free}</td>
+                                        <td className="text-sm text-accent-400 px-4 py-3 text-center font-medium">{row.pro}</td>
+                                        <td className="text-sm text-surface-400 px-4 py-3 text-center">{row.team}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -203,19 +174,12 @@ export default function PricingPage() {
             </main>
 
             {/* Footer */}
-            <footer className="border-t border-[var(--color-glass-border)] py-8 px-6">
-                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[var(--color-surface-500)]">
+            <footer className="border-t border-surface-800/50 py-8 px-6">
+                <div className="max-w-6xl mx-auto flex items-center justify-between text-sm text-surface-500">
                     <span>&copy; {new Date().getFullYear()} LatexForge. Open Source.</span>
-                    <div className="flex items-center gap-6">
-                        <Link href="/" className="hover:text-[var(--color-accent-400)] transition-colors">
-                            Home
-                        </Link>
-                        <a
-                            href="https://github.com/slegiot/latexeditor"
-                            className="hover:text-[var(--color-accent-400)] transition-colors"
-                        >
-                            GitHub
-                        </a>
+                    <div className="flex items-center gap-4">
+                        <Link href="/" className="hover:text-surface-300 transition-colors">Home</Link>
+                        <a href="https://github.com/slegiot/latexeditor" className="hover:text-surface-300 transition-colors">GitHub</a>
                     </div>
                 </div>
             </footer>
