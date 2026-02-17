@@ -1,288 +1,357 @@
 "use client";
 
 import { useState } from "react";
-import {
-    Sun,
-    Moon,
-    Monitor,
-    Save,
-    Loader2,
-    Check,
-    Type,
-    Timer,
-    FileText,
-    User,
-} from "lucide-react";
-
-interface Settings {
-    theme: "dark" | "light" | "system";
-    font_size: number;
-    auto_save: boolean;
-    auto_save_interval: number;
-    default_export: "pdf" | "zip";
-    vim_mode: boolean;
-    word_wrap: boolean;
-    minimap: boolean;
-}
+import { User, Mail, Github, Key, Bell, Palette, Loader2, Check, AlertCircle } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface SettingsFormProps {
-    initialSettings: Settings;
-    profile: {
-        fullName: string;
+    user: {
+        id: string;
         email: string;
     };
+    profile: {
+        full_name: string | null;
+        avatar_url: string | null;
+    } | null;
+    githubConnected: boolean;
 }
 
-export function SettingsForm({ initialSettings, profile }: SettingsFormProps) {
-    const [settings, setSettings] = useState<Settings>(initialSettings);
-    const [saving, setSaving] = useState(false);
-    const [saved, setSaved] = useState(false);
-    const [name, setName] = useState(profile.fullName);
+export function SettingsForm({ user, profile, githubConnected }: SettingsFormProps) {
+    const [activeTab, setActiveTab] = useState<"profile" | "account" | "notifications" | "appearance">("profile");
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-    function update<K extends keyof Settings>(key: K, value: Settings[K]) {
-        setSettings((prev) => ({ ...prev, [key]: value }));
-        setSaved(false);
-    }
+    const [formData, setFormData] = useState({
+        fullName: profile?.full_name || "",
+        email: user.email || "",
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+        emailNotifications: true,
+        collaborationAlerts: true,
+        marketingEmails: false,
+    });
 
-    function setTheme(theme: "dark" | "light" | "system") {
-        update("theme", theme);
-        const resolved =
-            theme === "system"
-                ? window.matchMedia("(prefers-color-scheme: dark)").matches
-                    ? "dark"
-                    : "light"
-                : theme;
-        document.documentElement.className = resolved;
-        localStorage.setItem("latexforge-theme", resolved);
-    }
+    const handleSaveProfile = async () => {
+        setIsSaving(true);
+        setSaveMessage(null);
 
-    async function handleSave() {
-        setSaving(true);
         try {
-            await fetch("/api/settings", {
+            const response = await fetch("/api/settings", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ settings, name }),
+                body: JSON.stringify({
+                    fullName: formData.fullName,
+                }),
             });
-            setSaved(true);
-            setTimeout(() => setSaved(false), 2000);
-        } catch {
-            // ignore
-        } finally {
-            setSaving(false);
-        }
-    }
 
-    const themeOptions = [
-        { key: "dark" as const, label: "Dark", icon: Moon },
-        { key: "light" as const, label: "Light", icon: Sun },
-        { key: "system" as const, label: "System", icon: Monitor },
+            if (response.ok) {
+                setSaveMessage({ type: "success", text: "Profile updated successfully!" });
+            } else {
+                setSaveMessage({ type: "error", text: "Failed to update profile" });
+            }
+        } catch {
+            setSaveMessage({ type: "error", text: "An error occurred" });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleConnectGitHub = async () => {
+        try {
+            const response = await fetch("/api/github/auth");
+            if (response.ok) {
+                const data = await response.json();
+                window.location.href = data.url;
+            }
+        } catch {
+            alert("Failed to connect to GitHub");
+        }
+    };
+
+    const tabs = [
+        { id: "profile", label: "Profile", icon: User },
+        { id: "account", label: "Account", icon: Key },
+        { id: "notifications", label: "Notifications", icon: Bell },
+        { id: "appearance", label: "Appearance", icon: Palette },
     ];
 
     return (
-        <div className="space-y-6">
-            {/* Profile */}
-            <section className="glass rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-5">
-                    <User className="w-4 h-4 text-accent-400" />
-                    <h2 className="text-white font-semibold">Profile</h2>
-                </div>
+        <div className="card overflow-hidden">
+            {/* Tabs */}
+            <div className="flex border-b border-[var(--border-secondary)] overflow-x-auto">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                        className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap border-b-2 ${activeTab === tab.id
+                                ? "text-emerald-400 border-emerald-400"
+                                : "text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)]"
+                            }`}
+                    >
+                        <tab.icon className="w-4 h-4" />
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
 
-                <div className="space-y-4">
-                    <div className="space-y-1.5">
-                        <label className="text-sm text-surface-400 font-medium">Display Name</label>
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => { setName(e.target.value); setSaved(false); }}
-                            className="input-field"
-                        />
+            {/* Content */}
+            <div className="p-6">
+                {saveMessage && (
+                    <div
+                        className={`mb-6 p-4 rounded-lg flex items-center gap-2 ${saveMessage.type === "success"
+                                ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+                                : "bg-red-500/10 border border-red-500/20 text-red-400"
+                            }`}
+                    >
+                        {saveMessage.type === "success" ? (
+                            <Check className="w-5 h-5" />
+                        ) : (
+                            <AlertCircle className="w-5 h-5" />
+                        )}
+                        {saveMessage.text}
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="text-sm text-surface-400 font-medium">Email</label>
-                        <input
-                            type="email"
-                            value={profile.email}
-                            disabled
-                            className="input-field opacity-60 cursor-not-allowed"
-                        />
-                    </div>
-                </div>
-            </section>
+                )}
 
-            {/* Theme */}
-            <section className="glass rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-5">
-                    <Moon className="w-4 h-4 text-accent-400" />
-                    <h2 className="text-white font-semibold">Theme</h2>
-                </div>
-
-                <div className="flex gap-2">
-                    {themeOptions.map(({ key, label, icon: Icon }) => (
-                        <button
-                            key={key}
-                            onClick={() => setTheme(key)}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex-1 justify-center ${settings.theme === key
-                                    ? "bg-accent-500/20 text-accent-400 ring-1 ring-accent-500/30"
-                                    : "bg-surface-800/50 text-surface-400 hover:bg-surface-800 hover:text-surface-300"
-                                }`}
-                        >
-                            <Icon className="w-4 h-4" />
-                            <span>{label}</span>
-                        </button>
-                    ))}
-                </div>
-            </section>
-
-            {/* Editor */}
-            <section className="glass rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-5">
-                    <Type className="w-4 h-4 text-accent-400" />
-                    <h2 className="text-white font-semibold">Editor</h2>
-                </div>
-
-                <div className="space-y-5">
-                    <div className="space-y-1.5">
-                        <label className="text-sm text-surface-400 font-medium">Font Size</label>
-                        <div className="flex items-center gap-3">
+                {activeTab === "profile" && (
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                                Full Name
+                            </label>
                             <input
-                                type="range"
-                                min={10}
-                                max={24}
-                                value={settings.font_size}
-                                onChange={(e) => update("font_size", parseInt(e.target.value))}
-                                className="flex-1 h-1.5 bg-surface-800 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                                type="text"
+                                value={formData.fullName}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, fullName: e.target.value })
+                                }
+                                className="input-field"
+                                placeholder="Your name"
                             />
-                            <span className="text-sm text-surface-300 font-mono w-8 text-right">{settings.font_size}</span>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                                Email
+                            </label>
+                            <input
+                                type="email"
+                                value={formData.email}
+                                disabled
+                                className="input-field opacity-50 cursor-not-allowed"
+                            />
+                            <p className="text-xs text-[var(--text-muted)] mt-1">
+                                Email cannot be changed
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={handleSaveProfile}
+                            disabled={isSaving}
+                            className="btn-primary"
+                        >
+                            {isSaving ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                "Save Changes"
+                            )}
+                        </button>
+                    </div>
+                )}
+
+                {activeTab === "account" && (
+                    <div className="space-y-6">
+                        {/* GitHub Integration */}
+                        <div className="p-4 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-secondary)]">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-[var(--bg-secondary)] flex items-center justify-center">
+                                        <Github className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-medium">GitHub</h4>
+                                        <p className="text-sm text-[var(--text-secondary)]">
+                                            {githubConnected
+                                                ? "Connected to GitHub"
+                                                : "Connect your GitHub account"}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleConnectGitHub}
+                                    className={githubConnected ? "btn-secondary" : "btn-primary"}
+                                >
+                                    {githubConnected ? "Reconnect" : "Connect"}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Change Password */}
+                        <div className="border-t border-[var(--border-secondary)] pt-6">
+                            <h4 className="font-medium mb-4">Change Password</h4>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                                        Current Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={formData.currentPassword}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, currentPassword: e.target.value })
+                                        }
+                                        className="input-field"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                                        New Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={formData.newPassword}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, newPassword: e.target.value })
+                                        }
+                                        className="input-field"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                                        Confirm New Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={formData.confirmPassword}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, confirmPassword: e.target.value })
+                                        }
+                                        className="input-field"
+                                    />
+                                </div>
+                                <button className="btn-primary">Update Password</button>
+                            </div>
+                        </div>
+
+                        {/* Delete Account */}
+                        <div className="border-t border-[var(--border-secondary)] pt-6">
+                            <h4 className="font-medium text-red-400 mb-2">Danger Zone</h4>
+                            <p className="text-sm text-[var(--text-secondary)] mb-4">
+                                Once you delete your account, there is no going back.
+                            </p>
+                            <button className="px-4 py-2 rounded-lg border border-red-500/50 text-red-400 hover:bg-red-500/10 transition-colors">
+                                Delete Account
+                            </button>
                         </div>
                     </div>
+                )}
 
-                    <Toggle
-                        label="Word Wrap"
-                        checked={settings.word_wrap}
-                        onChange={(v) => update("word_wrap", v)}
-                    />
-
-                    <Toggle
-                        label="Minimap"
-                        checked={settings.minimap}
-                        onChange={(v) => update("minimap", v)}
-                    />
-
-                    <Toggle
-                        label="Vim Mode"
-                        description="Use Vim keybindings in the editor"
-                        checked={settings.vim_mode}
-                        onChange={(v) => update("vim_mode", v)}
-                    />
-                </div>
-            </section>
-
-            {/* Auto-save */}
-            <section className="glass rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-5">
-                    <Timer className="w-4 h-4 text-accent-400" />
-                    <h2 className="text-white font-semibold">Auto-Save</h2>
-                </div>
-
-                <div className="space-y-4">
-                    <Toggle
-                        label="Enable Auto-Save"
-                        checked={settings.auto_save}
-                        onChange={(v) => update("auto_save", v)}
-                    />
-
-                    {settings.auto_save && (
-                        <div className="space-y-1.5">
-                            <label className="text-sm text-surface-400 font-medium">Interval (seconds)</label>
-                            <select
-                                value={settings.auto_save_interval}
-                                onChange={(e) => update("auto_save_interval", parseInt(e.target.value))}
-                                className="input-field text-sm"
-                            >
-                                <option value={15}>15s</option>
-                                <option value={30}>30s</option>
-                                <option value={60}>1 min</option>
-                                <option value={120}>2 min</option>
-                                <option value={300}>5 min</option>
-                            </select>
+                {activeTab === "notifications" && (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between py-4 border-b border-[var(--border-secondary)]">
+                            <div>
+                                <h4 className="font-medium">Email Notifications</h4>
+                                <p className="text-sm text-[var(--text-secondary)]">
+                                    Receive updates about your projects
+                                </p>
+                            </div>
+                            <Toggle
+                                checked={formData.emailNotifications}
+                                onChange={(v) =>
+                                    setFormData({ ...formData, emailNotifications: v })
+                                }
+                            />
                         </div>
-                    )}
-                </div>
-            </section>
 
-            {/* Export */}
-            <section className="glass rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-5">
-                    <FileText className="w-4 h-4 text-accent-400" />
-                    <h2 className="text-white font-semibold">Default Export</h2>
-                </div>
+                        <div className="flex items-center justify-between py-4 border-b border-[var(--border-secondary)]">
+                            <div>
+                                <h4 className="font-medium">Collaboration Alerts</h4>
+                                <p className="text-sm text-[var(--text-secondary)]">
+                                    Get notified when someone edits your projects
+                                </p>
+                            </div>
+                            <Toggle
+                                checked={formData.collaborationAlerts}
+                                onChange={(v) =>
+                                    setFormData({ ...formData, collaborationAlerts: v })
+                                }
+                            />
+                        </div>
 
-                <div className="flex gap-2">
-                    {(["pdf", "zip"] as const).map((fmt) => (
-                        <button
-                            key={fmt}
-                            onClick={() => update("default_export", fmt)}
-                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all uppercase ${settings.default_export === fmt
-                                    ? "bg-accent-500/20 text-accent-400 ring-1 ring-accent-500/30"
-                                    : "bg-surface-800/50 text-surface-400 hover:bg-surface-800"
-                                }`}
-                        >
-                            {fmt}
-                        </button>
-                    ))}
-                </div>
-            </section>
+                        <div className="flex items-center justify-between py-4">
+                            <div>
+                                <h4 className="font-medium">Marketing Emails</h4>
+                                <p className="text-sm text-[var(--text-secondary)]">
+                                    Receive product updates and promotions
+                                </p>
+                            </div>
+                            <Toggle
+                                checked={formData.marketingEmails}
+                                onChange={(v) =>
+                                    setFormData({ ...formData, marketingEmails: v })
+                                }
+                            />
+                        </div>
+                    </div>
+                )}
 
-            {/* Save Button */}
-            <div className="flex justify-end pt-2">
-                <button
-                    onClick={handleSave}
-                    disabled={saving || saved}
-                    className="btn-primary text-sm"
-                >
-                    {saving ? (
-                        <><Loader2 className="w-4 h-4 icon-spin" /> Saving…</>
-                    ) : saved ? (
-                        <><Check className="w-4 h-4" /> Saved</>
-                    ) : (
-                        <><Save className="w-4 h-4" /> Save Settings</>
-                    )}
-                </button>
+                {activeTab === "appearance" && (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between py-4">
+                            <div>
+                                <h4 className="font-medium">Dark Mode</h4>
+                                <p className="text-sm text-[var(--text-secondary)]">
+                                    Toggle between light and dark themes
+                                </p>
+                            </div>
+                            <ThemeToggle />
+                        </div>
+
+                        <div className="flex items-center justify-between py-4 border-t border-[var(--border-secondary)]">
+                            <div>
+                                <h4 className="font-medium">Compact Mode</h4>
+                                <p className="text-sm text-[var(--text-secondary)]">
+                                    Reduce spacing throughout the interface
+                                </p>
+                            </div>
+                            <Toggle checked={false} onChange={() => { }} />
+                        </div>
+
+                        <div className="flex items-center justify-between py-4 border-t border-[var(--border-secondary)]">
+                            <div>
+                                <h4 className="font-medium">Show Welcome Guide</h4>
+                                <p className="text-sm text-[var(--text-secondary)]">
+                                    Display onboarding tips for new features
+                                </p>
+                            </div>
+                            <Toggle checked={true} onChange={() => { }} />
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
 }
 
-function Toggle({
-    label,
-    description,
-    checked,
-    onChange,
-}: {
-    label: string;
-    description?: string;
+interface ToggleProps {
     checked: boolean;
-    onChange: (v: boolean) => void;
-}) {
+    onChange: (checked: boolean) => void;
+}
+
+function Toggle({ checked, onChange }: ToggleProps) {
     return (
-        <div className="flex items-center justify-between">
-            <div>
-                <span className="text-sm text-white">{label}</span>
-                {description && (
-                    <p className="text-xs text-surface-500 mt-0.5">{description}</p>
-                )}
-            </div>
-            <button
-                role="switch"
-                aria-checked={checked}
-                onClick={() => onChange(!checked)}
-                className={`relative w-10 h-5 rounded-full transition-colors ${checked ? "bg-accent-500" : "bg-surface-700"
+        <button
+            onClick={() => onChange(!checked)}
+            className={`relative w-11 h-6 rounded-full transition-colors ${checked ? "bg-emerald-500" : "bg-[var(--bg-tertiary)]"
+                }`}
+        >
+            <span
+                className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${checked ? "translate-x-5" : "translate-x-0"
                     }`}
-            >
-                <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-5" : "translate-x-0"
-                    }`} />
-            </button>
-        </div>
+            />
+        </button>
     );
 }

@@ -1,118 +1,83 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Download, FileArchive, FileText, Loader2 } from "lucide-react";
+import { Download, FileText, FileCode, Archive } from "lucide-react";
 
 interface ExportMenuProps {
-    projectId: string;
     pdfUrl: string | null;
+    onClose: () => void;
 }
 
-export function ExportMenu({ projectId, pdfUrl }: ExportMenuProps) {
-    const [open, setOpen] = useState(false);
-    const [loading, setLoading] = useState<string | null>(null);
-    const menuRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-                setOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    async function downloadZip() {
-        setLoading("zip");
-        try {
-            const res = await fetch("/api/export", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ projectId, format: "zip" }),
-            });
-
-            if (!res.ok) throw new Error("Export failed");
-
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `project-${projectId.slice(0, 8)}.zip`;
-            a.click();
-            URL.revokeObjectURL(url);
-        } catch (err) {
-            console.error("ZIP export error:", err);
-        } finally {
-            setLoading(null);
-            setOpen(false);
-        }
-    }
-
-    async function downloadPdf() {
+export function ExportMenu({ pdfUrl, onClose }: ExportMenuProps) {
+    const handleDownloadPDF = () => {
         if (pdfUrl) {
-            const a = document.createElement("a");
-            a.href = pdfUrl;
-            a.download = "document.pdf";
-            a.click();
-            setOpen(false);
-            return;
+            const link = document.createElement("a");
+            link.href = pdfUrl;
+            link.download = "document.pdf";
+            link.click();
         }
+        onClose();
+    };
 
-        setLoading("pdf");
-        try {
-            const res = await fetch("/api/export", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ projectId, format: "pdf" }),
-            });
-            const data = await res.json();
-            if (data.pdfUrl) {
-                const a = document.createElement("a");
-                a.href = data.pdfUrl;
-                a.download = "document.pdf";
-                a.click();
-            }
-        } catch (err) {
-            console.error("PDF export error:", err);
-        } finally {
-            setLoading(null);
-            setOpen(false);
-        }
-    }
+    const handleDownloadSource = () => {
+        // TODO: Implement source download
+        console.log("Download source");
+        onClose();
+    };
+
+    const handleDownloadZip = () => {
+        // TODO: Implement zip download
+        console.log("Download zip");
+        onClose();
+    };
 
     return (
-        <div ref={menuRef} className="relative">
-            <button
-                onClick={() => setOpen(!open)}
-                title="Export"
-                className={`btn-ghost text-xs gap-1.5 px-2.5 py-1.5 rounded-lg transition-all ${open ? "bg-accent-500/15 text-accent-400" : ""}`}
-            >
-                <Download className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Export</span>
-            </button>
-
-            {open && (
-                <div className="absolute top-full left-0 mt-1.5 w-48 glass rounded-xl border border-surface-800/50 shadow-2xl z-40 overflow-hidden animate-scale-in origin-top-left p-1">
-                    <button
-                        onClick={downloadZip}
-                        disabled={!!loading}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-surface-300 rounded-lg hover:bg-surface-800/40 transition-colors"
-                    >
-                        {loading === "zip" ? <Loader2 className="w-4 h-4 icon-spin" /> : <FileArchive className="w-4 h-4 text-amber-400" />}
-                        Download ZIP
-                    </button>
-
-                    <button
-                        onClick={downloadPdf}
-                        disabled={!!loading}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-surface-300 rounded-lg hover:bg-surface-800/40 transition-colors"
-                    >
-                        {loading === "pdf" ? <Loader2 className="w-4 h-4 icon-spin" /> : <FileText className="w-4 h-4 text-red-400" />}
-                        Download PDF
-                    </button>
+        <>
+            <div className="fixed inset-0 z-40" onClick={onClose} />
+            <div className="absolute right-0 top-full mt-1 w-56 py-1 rounded-lg glass-strong border border-[var(--border-primary)] shadow-xl z-50 animate-scale-in">
+                <div className="px-3 py-2 text-xs text-[var(--text-muted)] uppercase tracking-wider">
+                    Export Options
                 </div>
-            )}
-        </div>
+
+                <button
+                    onClick={handleDownloadPDF}
+                    disabled={!pdfUrl}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <FileText className="w-4 h-4 text-red-400" />
+                    <div className="text-left">
+                        <p className="font-medium">Download PDF</p>
+                        <p className="text-xs text-[var(--text-muted)]">
+                            Compiled document
+                        </p>
+                    </div>
+                </button>
+
+                <button
+                    onClick={handleDownloadSource}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                    <FileCode className="w-4 h-4 text-emerald-400" />
+                    <div className="text-left">
+                        <p className="font-medium">Download Source</p>
+                        <p className="text-xs text-[var(--text-muted)]">
+                            .tex files only
+                        </p>
+                    </div>
+                </button>
+
+                <button
+                    onClick={handleDownloadZip}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                    <Archive className="w-4 h-4 text-yellow-400" />
+                    <div className="text-left">
+                        <p className="font-medium">Download ZIP</p>
+                        <p className="text-xs text-[var(--text-muted)]">
+                            Complete project
+                        </p>
+                    </div>
+                </button>
+            </div>
+        </>
     );
 }

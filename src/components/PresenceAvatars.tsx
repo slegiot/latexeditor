@@ -1,53 +1,61 @@
 "use client";
 
-import type { Peer } from "@/hooks/useYjs";
+interface Peer {
+    name: string;
+    color: string;
+}
 
 interface PresenceAvatarsProps {
     peers: Peer[];
-    connected: boolean;
+    className?: string;
+    maxDisplay?: number;
 }
 
-const AVATAR_COLORS = [
-    "bg-emerald-500",
-    "bg-blue-500",
-    "bg-purple-500",
-    "bg-amber-500",
-    "bg-rose-500",
-    "bg-cyan-500",
-];
+export function PresenceAvatars({
+    peers,
+    className = "",
+    maxDisplay = 3,
+}: PresenceAvatarsProps) {
+    if (peers.length === 0) return null;
 
-export function PresenceAvatars({ peers, connected }: PresenceAvatarsProps) {
-    // Deduplicate peers by name
-    const uniquePeers = peers.filter(
-        (peer, index, self) => index === self.findIndex((p) => p.name === peer.name)
-    );
+    const displayPeers = peers.slice(0, maxDisplay);
+    const remainingCount = peers.length - maxDisplay;
 
     return (
-        <div className="flex items-center gap-1.5" title={connected ? "Connected" : "Disconnected"}>
-            <span className={`text-[10px] ${connected ? "text-success" : "text-surface-600"}`}>
-                {connected ? "●" : "○"}
-            </span>
-            <div className="flex -space-x-1.5">
-                {uniquePeers.slice(0, 4).map((peer, i) => (
-                    <span
-                        key={i}
+        <div className={`flex items-center ${className}`}>
+            <div className="flex -space-x-2">
+                {displayPeers.map((peer, index) => (
+                    <div
+                        key={index}
+                        className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium text-white border-2 border-[var(--bg-secondary)]"
+                        style={{ backgroundColor: peer.color }}
                         title={peer.name}
-                        className={`w-6 h-6 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-surface-900`}
                     >
-                        {peer.name?.[0]?.toUpperCase() || "?"}
-                    </span>
+                        {getInitials(peer.name)}
+                        <span
+                            className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--bg-secondary)]"
+                            style={{ backgroundColor: peer.color }}
+                        />
+                    </div>
                 ))}
-                {uniquePeers.length > 4 && (
-                    <span className="w-6 h-6 rounded-full bg-surface-700 flex items-center justify-center text-[10px] text-surface-300 font-bold ring-2 ring-surface-900">
-                        +{uniquePeers.length - 4}
-                    </span>
+                {remainingCount > 0 && (
+                    <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium text-[var(--text-secondary)] bg-[var(--bg-tertiary)] border-2 border-[var(--bg-secondary)]"
+                        title={`${remainingCount} more collaborator${remainingCount > 1 ? "s" : ""}`}
+                    >
+                        +{remainingCount}
+                    </div>
                 )}
             </div>
-            {uniquePeers.length > 0 && (
-                <span className="text-[11px] text-surface-500 hidden sm:inline">
-                    {uniquePeers.length} online
-                </span>
-            )}
         </div>
     );
+}
+
+function getInitials(name: string): string {
+    return name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
 }

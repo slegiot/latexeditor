@@ -4,36 +4,55 @@ import { useState, useEffect } from "react";
 import { Sun, Moon } from "lucide-react";
 
 export function ThemeToggle() {
-    const [theme, setTheme] = useState<"dark" | "light">("dark");
+    const [isDark, setIsDark] = useState(true);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
-        if (savedTheme) {
-            setTheme(savedTheme);
-            document.documentElement.classList.toggle("light", savedTheme === "light");
-            document.documentElement.classList.toggle("dark", savedTheme !== "light");
+        setMounted(true);
+        // Check if user has a preference stored
+        const stored = localStorage.getItem("theme");
+        if (stored) {
+            setIsDark(stored === "dark");
+            document.documentElement.classList.toggle("dark", stored === "dark");
+            document.documentElement.classList.toggle("light", stored === "light");
+        } else {
+            // Default to dark mode
+            setIsDark(true);
+            document.documentElement.classList.add("dark");
         }
     }, []);
 
     const toggleTheme = () => {
-        const newTheme = theme === "dark" ? "light" : "dark";
-        setTheme(newTheme);
-        localStorage.setItem("theme", newTheme);
-        document.documentElement.classList.toggle("light", newTheme === "light");
-        document.documentElement.classList.toggle("dark", newTheme !== "light");
+        const newIsDark = !isDark;
+        setIsDark(newIsDark);
+        document.documentElement.classList.toggle("dark", newIsDark);
+        document.documentElement.classList.toggle("light", !newIsDark);
+        localStorage.setItem("theme", newIsDark ? "dark" : "light");
     };
+
+    // Prevent hydration mismatch
+    if (!mounted) {
+        return (
+            <button
+                className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                aria-label="Toggle theme"
+            >
+                <Moon className="w-5 h-5" />
+            </button>
+        );
+    }
 
     return (
         <button
             onClick={toggleTheme}
-            className="btn-ghost p-2 rounded-lg"
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
         >
-            {theme === "dark" ? (
-                <Sun className="w-[18px] h-[18px] text-surface-400 hover:text-yellow-400 transition-colors" />
+            {isDark ? (
+                <Sun className="w-5 h-5" />
             ) : (
-                <Moon className="w-[18px] h-[18px] text-surface-500 hover:text-surface-700 transition-colors" />
+                <Moon className="w-5 h-5" />
             )}
         </button>
     );

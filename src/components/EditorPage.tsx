@@ -611,7 +611,7 @@ export function EditorPage({
     }, []);
 
     return (
-        <div className="h-screen flex flex-col bg-surface-950 overflow-hidden">
+        <div>
             <EditorToolbar
                 projectId={project.id}
                 projectName={project.name}
@@ -642,28 +642,24 @@ export function EditorPage({
                 getContent={getContent}
             />
 
-            <div className="flex-1 flex overflow-hidden relative">
+            <div>
                 {/* Monaco Editor */}
                 <div
-                    className="flex flex-col min-w-0"
                     style={{ width: showPdf ? `${dividerPos}%` : "100%" }}
                 >
-                    {/* Tab bar */}
-                    <div className="h-9 bg-surface-900/60 border-b border-surface-800/50 flex items-center justify-between px-3 shrink-0">
-                        <div className="flex items-center gap-1.5 text-xs text-surface-400">
+                    <div>
+                        <div>
                             <FileIcon />
-                            <span className="font-medium">main.tex</span>
+                            <span>main.tex</span>
                         </div>
                         <button
                             onClick={() => setShowPdf((prev) => !prev)}
-                            className="btn-ghost text-[11px] px-2 py-1"
                         >
                             {showPdf ? "Hide Preview" : "Show Preview"}
                         </button>
                     </div>
 
-                    {/* Editor area */}
-                    <div className="flex-1 overflow-hidden">
+                    <div>
                         <Editor
                             language={LATEX_LANGUAGE_ID}
                             defaultValue=""
@@ -687,9 +683,9 @@ export function EditorPage({
                                 padding: { top: 12 },
                             }}
                             loading={
-                                <div className="flex items-center justify-center h-full gap-2 text-surface-500">
+                                <div>
                                     <Spinner />
-                                    <span className="text-sm">Loading editor…</span>
+                                    <span>Loading editor…</span>
                                 </div>
                             }
                         />
@@ -697,8 +693,8 @@ export function EditorPage({
 
                     {/* Error panel */}
                     {errors.length > 0 && (
-                        <div className="border-t border-surface-800/50 bg-surface-900/80 max-h-40 overflow-y-auto shrink-0">
-                            <div className="px-3 py-1.5 text-xs font-semibold text-surface-400 border-b border-surface-800/30 sticky top-0 bg-surface-900/90 backdrop-blur-sm">
+                        <div>
+                            <div>
                                 Problems ({errors.length})
                             </div>
                             {errors.map((err, i) => (
@@ -712,12 +708,9 @@ export function EditorPage({
                                         });
                                         editorRef.current?.focus();
                                     }}
-                                    className="w-full text-left px-3 py-1.5 text-xs hover:bg-surface-800/30 transition-colors flex items-center gap-2"
                                 >
-                                    <span className={`shrink-0 font-mono ${err.severity === "error" ? "text-danger" : "text-warning"}`}>
-                                        [{err.severity}]
-                                    </span>
-                                    <span className="text-surface-400 truncate">
+                                    [{err.severity}]
+                                    <span>
                                         Ln {err.line}: {err.message}
                                     </span>
                                 </button>
@@ -740,35 +733,31 @@ export function EditorPage({
                 {showPdf && (
                     <div
                         onMouseDown={handleMouseDown}
-                        className="w-1.5 bg-surface-800/50 hover:bg-accent-500/30 active:bg-accent-500/50 transition-colors cursor-col-resize shrink-0 relative group"
-                    >
-                        <div className="absolute inset-y-0 -left-1 -right-1" />
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-8 bg-surface-600 rounded-full group-hover:bg-accent-400 transition-colors" />
-                    </div>
+                        style={{ cursor: 'col-resize', width: '6px' }}
+                    />
                 )}
 
                 {/* PDF Preview */}
                 {showPdf && (
                     <div
-                        className="flex flex-col min-w-0 bg-surface-900/40"
                         style={{ width: `${100 - dividerPos}%` }}
                     >
-                        <div className="h-9 bg-surface-900/60 border-b border-surface-800/50 flex items-center px-3 shrink-0">
-                            <span className="text-xs text-surface-400 font-medium">
+                        <div>
+                            <span>
                                 PDF Preview
                             </span>
                         </div>
-                        <div className="flex-1 overflow-hidden">
+                        <div>
                             {pdfUrl ? (
                                 <iframe
                                     src={pdfUrl}
-                                    className="w-full h-full border-none"
+                                    style={{ width: '100%', height: '100%', border: 'none' }}
                                     title="PDF Preview"
                                 />
                             ) : (
-                                <div className="flex items-center justify-center h-full">
-                                    <p className="text-sm text-surface-600">
-                                        Press <kbd className="px-1.5 py-0.5 rounded bg-surface-800 text-surface-400 text-xs font-mono">Ctrl+Enter</kbd> to compile
+                                <div>
+                                    <p>
+                                        Press <kbd>Ctrl+Enter</kbd> to compile
                                     </p>
                                 </div>
                             )}
@@ -845,7 +834,6 @@ function FileIcon() {
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
-            className="text-accent-400"
         >
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
             <polyline points="14 2 14 8 20 8" />
@@ -855,7 +843,7 @@ function FileIcon() {
 
 function Spinner() {
     return (
-        <svg viewBox="0 0 24 24" fill="none" width="16" height="16" className="icon-spin">
+        <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
             <circle
                 cx="12"
                 cy="12"

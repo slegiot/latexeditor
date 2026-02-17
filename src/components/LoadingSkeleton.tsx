@@ -1,63 +1,165 @@
+"use client";
+
+interface SkeletonProps {
+    className?: string;
+}
+
+export function Skeleton({ className = "" }: SkeletonProps) {
+    return (
+        <div
+            className={`animate-pulse bg-[var(--bg-tertiary)] rounded ${className}`}
+        />
+    );
+}
+
 export function ProjectCardSkeleton() {
     return (
-        <div className="glass rounded-2xl p-5">
-            <div className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 rounded-xl skeleton" />
-                <div className="flex-1">
-                    <div className="h-4 w-32 skeleton mb-2" />
-                    <div className="h-3 w-20 skeleton" />
-                </div>
+        <div className="card p-5">
+            <div className="flex items-start justify-between mb-4">
+                <Skeleton className="w-12 h-12 rounded-xl" />
+                <Skeleton className="w-8 h-8 rounded-lg" />
             </div>
-            <div className="h-3 w-full skeleton mb-2" />
-            <div className="h-3 w-2/3 skeleton" />
+            <Skeleton className="h-6 w-3/4 mb-2" />
+            <Skeleton className="h-4 w-full mb-4" />
+            <div className="flex items-center gap-3">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-3 w-16" />
+            </div>
         </div>
     );
 }
 
-export function DashboardSkeleton() {
+export function ProjectsGridSkeleton({ count = 6 }: { count?: number }) {
     return (
-        <div className="pt-20 pb-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-6xl mx-auto">
-                <div className="mb-8">
-                    <div className="h-8 w-64 skeleton mb-2" />
-                    <div className="h-4 w-40 skeleton" />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {[1, 2, 3, 4, 5, 6].map((i) => (
-                        <ProjectCardSkeleton key={i} />
-                    ))}
-                </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(count)].map((_, i) => (
+                <ProjectCardSkeleton key={i} />
+            ))}
         </div>
     );
 }
 
 export function EditorSkeleton() {
     return (
-        <div className="h-screen flex flex-col bg-surface-950">
-            {/* Toolbar skeleton */}
-            <div className="h-12 border-b border-surface-800/50 flex items-center px-4 gap-3">
-                <div className="h-5 w-5 skeleton rounded" />
-                <div className="h-4 w-32 skeleton" />
+        <div className="h-screen flex flex-col bg-[var(--bg-primary)]">
+            {/* Toolbar Skeleton */}
+            <div className="h-14 border-b border-[var(--border-secondary)] flex items-center px-4 gap-4">
+                <Skeleton className="w-8 h-8 rounded-lg" />
+                <Skeleton className="h-4 w-32" />
                 <div className="flex-1" />
-                <div className="flex gap-2">
-                    {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-7 w-7 skeleton rounded-lg" />
-                    ))}
-                </div>
+                <Skeleton className="w-24 h-8 rounded-lg" />
+                <Skeleton className="w-8 h-8 rounded-lg" />
+                <Skeleton className="w-8 h-8 rounded-lg" />
             </div>
-            {/* Editor area skeleton */}
+
+            {/* Editor Area Skeleton */}
             <div className="flex-1 flex">
-                <div className="flex-1 p-4 space-y-2">
-                    {[...Array(15)].map((_, i) => (
-                        <div key={i} className="h-4 skeleton" style={{ width: `${40 + Math.random() * 50}%` }} />
-                    ))}
+                {/* Sidebar */}
+                <div className="w-64 border-r border-[var(--border-secondary)] p-4 hidden lg:block">
+                    <Skeleton className="h-4 w-24 mb-4" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-full rounded-lg" />
+                        <Skeleton className="h-8 w-full rounded-lg" />
+                        <Skeleton className="h-8 w-full rounded-lg" />
+                    </div>
                 </div>
-                <div className="w-px bg-surface-800/50" />
-                <div className="flex-1 flex items-center justify-center">
-                    <div className="text-surface-600 text-sm">Loading preview…</div>
+
+                {/* Editor */}
+                <div className="flex-1 p-4">
+                    <Skeleton className="h-full w-full rounded-lg" />
+                </div>
+
+                {/* Preview */}
+                <div className="w-1/2 border-l border-[var(--border-secondary)] p-4 hidden xl:block">
+                    <Skeleton className="h-full w-full rounded-lg" />
                 </div>
             </div>
+        </div>
+    );
+}
+
+export function DashboardSkeleton() {
+    return (
+        <div className="min-h-screen bg-[var(--bg-primary)]">
+            {/* Navbar Skeleton */}
+            <div className="h-16 border-b border-[var(--border-secondary)] flex items-center px-4 sm:px-6 lg:px-8">
+                <Skeleton className="w-8 h-8 rounded-lg" />
+                <Skeleton className="h-4 w-32 ml-3" />
+                <div className="flex-1" />
+                <Skeleton className="w-8 h-8 rounded-lg" />
+            </div>
+
+            {/* Content */}
+            <main className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto">
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                        <div>
+                            <Skeleton className="h-8 w-48 mb-2" />
+                            <Skeleton className="h-4 w-64" />
+                        </div>
+                        <Skeleton className="h-10 w-32 rounded-lg" />
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className="card p-4 flex items-center gap-4">
+                                <Skeleton className="w-10 h-10 rounded-lg" />
+                                <div>
+                                    <Skeleton className="h-6 w-12 mb-1" />
+                                    <Skeleton className="h-3 w-20" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Search */}
+                    <Skeleton className="h-10 w-full max-w-md mb-6 rounded-lg" />
+
+                    {/* Projects Grid */}
+                    <ProjectsGridSkeleton />
+                </div>
+            </main>
+        </div>
+    );
+}
+
+export function TableSkeleton({ rows = 5 }: { rows?: number }) {
+    return (
+        <div className="w-full">
+            {/* Header */}
+            <div className="flex gap-4 pb-4 border-b border-[var(--border-secondary)]">
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-4 w-1/4" />
+            </div>
+            {/* Rows */}
+            <div className="space-y-4 pt-4">
+                {[...Array(rows)].map((_, i) => (
+                    <div key={i} className="flex gap-4">
+                        <Skeleton className="h-8 w-1/4" />
+                        <Skeleton className="h-8 w-1/4" />
+                        <Skeleton className="h-8 w-1/4" />
+                        <Skeleton className="h-8 w-1/4" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+export function FormSkeleton({ fields = 4 }: { fields?: number }) {
+    return (
+        <div className="space-y-4">
+            {[...Array(fields)].map((_, i) => (
+                <div key={i}>
+                    <Skeleton className="h-4 w-24 mb-2" />
+                    <Skeleton className="h-10 w-full rounded-lg" />
+                </div>
+            ))}
+            <Skeleton className="h-10 w-full rounded-lg mt-6" />
         </div>
     );
 }

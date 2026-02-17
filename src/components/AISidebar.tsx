@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
     X,
+    Send,
+    Bot,
     Sparkles,
-    AlertCircle,
     Wand2,
+    Code2,
+    Loader2,
+    Check,
     Copy,
     RotateCcw,
-    Check,
-    Loader2,
-    ChevronDown,
-    ChevronUp,
 } from "lucide-react";
 import type { LatexError } from "@/lib/latex-errors";
 
@@ -25,6 +25,13 @@ interface AISidebarProps {
     onModeChange: (mode: "fix" | "generate") => void;
 }
 
+interface Message {
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+    type?: "text" | "code";
+}
+
 export function AISidebar({
     open,
     mode,
@@ -34,240 +41,341 @@ export function AISidebar({
     onClose,
     onModeChange,
 }: AISidebarProps) {
-    const [prompt, setPrompt] = useState("");
-    const [response, setResponse] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [copied, setCopied] = useState(false);
-    const [showErrors, setShowErrors] = useState(true);
-    const responseRef = useRef<HTMLDivElement>(null);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [input, setInput] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [suggestedFix, setSuggestedFix] = useState<string | null>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    // Auto-scroll to bottom
     useEffect(() => {
-        if (responseRef.current) {
-            responseRef.current.scrollTop = responseRef.current.scrollHeight;
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
+
+    // Show error context when opening in fix mode
+    useEffect(() => {
+        if (open && mode === "fix" && errors.length > 0 && messages.length === 0) {
+            const errorText = errors
+                .map((e) => `Line ${e.line}: ${e.message}`)
+                .join("\n");
+            setMessages([
+                {
+                    id: "system",
+                    role: "assistant",
+                    content: `I found ${errors.length} error${errors.length > 1 ? "s" : ""} in your document:\n\n${errorText}\n\nWould you like me to help fix them?`,
+                    type: "text",
+                },
+            ]);
         }
-    }, [response]);
+    }, [open, mode, errors]);
 
-    const handleFixErrors = useCallback(async () => {
-        setLoading(true);
-        setResponse("");
+    const handleSend = async () => {
+        if (!input.trim() || isLoading) return;
 
-        const content = getContent();
-        const errorSummary = errors
-            .map((e) => `Line ${e.line}: ${e.message}`)
-            .join("\n");
+        const userMessage: Message = {
+            id: Date.now().toString(),
+            role: "user",
+            content: input,
+            type: "text",
+        };
+
+        setMessages((prev) => [...prev, userMessage]);
+        setInput("");
+        setIsLoading(true);
 
         try {
-            const res = await fetch("/api/ai", {
+            const response = await fetch("/api/ai", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    action: "fix",
-                    content,
-                    errors: errorSummary,
+                    content: getContent(),
+                    prompt: input,
+                    mode,
+                    errors,
                 }),
             });
 
-            if (!res.ok) {
-                const data = await res.json();
-                setResponse(`Error: ${data.error || "AI request failed"}`);
-                return;
-            }
+            if (response.ok) {
+                const data = await response.json();
+                const assistantMessage: Message = {
+                    id: (Date.now() + 1).toString(),
+                    role: "assistant",
+                    content: data.result,
+                    type: data.type || "text",
+                };
+                setMessages((prev) => [...prev, assistantMessage]);
 
-            const reader = res.body?.getReader();
-            const decoder = new TextDecoder();
-
-            if (reader) {
-                let buffer = "";
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    buffer += decoder.decode(value, { stream: true });
-                    setResponse(buffer);
+                if (data.type === "code") {
+                    setSuggestedFix(data.result);
                 }
+            } else {
+                const error = await response.json();
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: (Date.now() + 1).toString(),
+                        role: "assistant",
+                        content: `Error: ${error.error || "Failed to get response"}`,
+                        type: "text",
+                    },
+                ]);
             }
-        } catch (err) {
-            setResponse("Network error — could not reach AI service");
+        } catch {
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: (Date.now() + 1).toString(),
+                    role: "assistant",
+                    content: "Sorry, I encountered an error. Please try again.",
+                    type: "text",
+                },
+            ]);
         } finally {
-            setLoading(false);
-        }
-    }, [errors, getContent]);
-
-    const handleGenerate = useCallback(async () => {
-        if (!prompt.trim()) return;
-        setLoading(true);
-        setResponse("");
-
-        try {
-            const res = await fetch("/api/ai", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    action: "generate",
-                    prompt: prompt.trim(),
-                    context: getContent().slice(0, 500),
-                }),
-            });
-
-            if (!res.ok) {
-                const data = await res.json();
-                setResponse(`Error: ${data.error || "AI request failed"}`);
-                return;
-            }
-
-            const reader = res.body?.getReader();
-            const decoder = new TextDecoder();
-
-            if (reader) {
-                let buffer = "";
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    buffer += decoder.decode(value, { stream: true });
-                    setResponse(buffer);
-                }
-            }
-        } catch (err) {
-            setResponse("Network error — could not reach AI service");
-        } finally {
-            setLoading(false);
-        }
-    }, [prompt, getContent]);
-
-    const handleApply = () => {
-        if (response) {
-            onApplyContent(response);
+            setIsLoading(false);
         }
     };
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(response);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+    const handleApplyFix = () => {
+        if (suggestedFix) {
+            onApplyContent(suggestedFix);
+            setSuggestedFix(null);
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: Date.now().toString(),
+                    role: "assistant",
+                    content: "Changes applied successfully!",
+                    type: "text",
+                },
+            ]);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
     };
 
     if (!open) return null;
 
     return (
-        <div className="absolute right-0 top-0 bottom-0 w-96 glass border-l border-surface-800/50 flex flex-col z-30 animate-slide-in-right">
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800/50 shrink-0">
-                <div className="flex items-center gap-2 text-white text-sm font-semibold">
-                    <Sparkles className="w-4 h-4 text-accent-400" />
-                    <span>AI Assistant</span>
-                </div>
-                <button onClick={onClose} className="btn-ghost p-1" aria-label="Close">
-                    <X className="w-4 h-4" />
-                </button>
-            </div>
+        <>
+            {/* Mobile overlay */}
+            <div
+                className="fixed inset-0 bg-black/50 lg:hidden z-40"
+                onClick={onClose}
+            />
 
-            {/* Mode Tabs */}
-            <div className="flex border-b border-surface-800/50 shrink-0">
-                <button
-                    onClick={() => onModeChange("fix")}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${mode === "fix"
-                            ? "border-accent-500 text-accent-400"
-                            : "border-transparent text-surface-500 hover:text-surface-300"
-                        }`}
-                >
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    Fix Errors
-                </button>
-                <button
-                    onClick={() => onModeChange("generate")}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${mode === "generate"
-                            ? "border-accent-500 text-accent-400"
-                            : "border-transparent text-surface-500 hover:text-surface-300"
-                        }`}
-                >
-                    <Wand2 className="w-3.5 h-3.5" />
-                    Generate
-                </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {mode === "fix" ? (
-                    <div className="space-y-3">
-                        {/* Error List */}
-                        {errors.length > 0 ? (
-                            <div className="space-y-3">
-                                <button
-                                    onClick={() => setShowErrors(!showErrors)}
-                                    className="flex items-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 transition-colors"
-                                >
-                                    {showErrors ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                    {errors.length} error{errors.length !== 1 ? "s" : ""} found
-                                </button>
-                                {showErrors && (
-                                    <div className="space-y-1 text-xs font-mono bg-surface-900/50 rounded-lg p-2.5 max-h-40 overflow-y-auto">
-                                        {errors.map((err, i) => (
-                                            <div key={i} className="text-surface-400">
-                                                <span className="text-danger">Ln {err.line}</span>: {err.message}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                <button
-                                    onClick={handleFixErrors}
-                                    disabled={loading}
-                                    className="btn-primary w-full justify-center text-sm"
-                                >
-                                    {loading ? <Loader2 className="w-4 h-4 icon-spin" /> : <Sparkles className="w-4 h-4" />}
-                                    {loading ? "Fixing…" : "Fix All Errors"}
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center py-8 text-center">
-                                <Check className="w-8 h-8 text-success mb-2" />
-                                <p className="text-sm text-surface-400">No errors found</p>
-                            </div>
-                        )}
+            {/* Sidebar */}
+            <div className="fixed right-0 top-14 bottom-0 w-96 bg-[var(--bg-secondary)] border-l border-[var(--border-secondary)] z-50 flex flex-col animate-slide-in-right">
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-secondary)]">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                            <Bot className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-sm">AI Assistant</h3>
+                            <p className="text-xs text-[var(--text-muted)]">
+                                {mode === "fix" ? "Fix Errors" : "Generate Content"}
+                            </p>
+                        </div>
                     </div>
-                ) : (
-                    <div className="space-y-3">
-                        <textarea
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            placeholder="Describe what you want to generate..."
-                            rows={4}
-                            className="input-field text-sm resize-none"
-                        />
+                    <div className="flex items-center gap-1">
                         <button
-                            onClick={handleGenerate}
-                            disabled={loading || !prompt.trim()}
-                            className="btn-primary w-full justify-center text-sm"
+                            onClick={() => onModeChange(mode === "fix" ? "generate" : "fix")}
+                            className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                            title={mode === "fix" ? "Switch to Generate" : "Switch to Fix"}
                         >
-                            {loading ? <Loader2 className="w-4 h-4 icon-spin" /> : <Wand2 className="w-4 h-4" />}
-                            {loading ? "Generating…" : "Generate"}
+                            <RotateCcw className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors lg:hidden"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Mode Toggle */}
+                <div className="flex border-b border-[var(--border-secondary)]">
+                    <button
+                        onClick={() => onModeChange("fix")}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm transition-colors ${mode === "fix"
+                                ? "text-purple-400 bg-purple-500/10"
+                                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                            }`}
+                    >
+                        <Wand2 className="w-4 h-4" />
+                        Fix
+                    </button>
+                    <button
+                        onClick={() => onModeChange("generate")}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm transition-colors ${mode === "generate"
+                                ? "text-purple-400 bg-purple-500/10"
+                                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                            }`}
+                    >
+                        <Sparkles className="w-4 h-4" />
+                        Generate
+                    </button>
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {messages.length === 0 && (
+                        <div className="text-center py-8 text-[var(--text-muted)]">
+                            <Bot className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                            <p className="text-sm">
+                                {mode === "fix"
+                                    ? "I can help you fix LaTeX errors in your document."
+                                    : "I can help you write and improve your LaTeX document."}
+                            </p>
+                            <div className="mt-4 space-y-2">
+                                {mode === "fix" ? (
+                                    <>
+                                        <SuggestionChip
+                                            text="Fix all errors"
+                                            onClick={() => setInput("Fix all errors in my document")}
+                                        />
+                                        <SuggestionChip
+                                            text="Explain the errors"
+                                            onClick={() => setInput("Explain these errors to me")}
+                                        />
+                                    </>
+                                ) : (
+                                    <>
+                                        <SuggestionChip
+                                            text="Write an introduction"
+                                            onClick={() => setInput("Write an introduction section")}
+                                        />
+                                        <SuggestionChip
+                                            text="Improve this paragraph"
+                                            onClick={() => setInput("Improve the writing in this document")}
+                                        />
+                                        <SuggestionChip
+                                            text="Add citations"
+                                            onClick={() => setInput("Add proper citations where needed")}
+                                        />
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {messages.map((message) => (
+                        <div
+                            key={message.id}
+                            className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : ""
+                                }`}
+                        >
+                            <div
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${message.role === "user"
+                                        ? "bg-emerald-500/10"
+                                        : "bg-purple-500/10"
+                                    }`}
+                            >
+                                {message.role === "user" ? (
+                                    <span className="text-xs font-medium text-emerald-400">
+                                        You
+                                    </span>
+                                ) : (
+                                    <Bot className="w-4 h-4 text-purple-400" />
+                                )}
+                            </div>
+                            <div
+                                className={`flex-1 rounded-lg p-3 text-sm ${message.role === "user"
+                                        ? "bg-emerald-500/10 text-emerald-100"
+                                        : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)]"
+                                    }`}
+                            >
+                                {message.type === "code" ? (
+                                    <pre className="font-mono text-xs overflow-x-auto">
+                                        <code>{message.content}</code>
+                                    </pre>
+                                ) : (
+                                    <p className="whitespace-pre-wrap">{message.content}</p>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+
+                    {isLoading && (
+                        <div className="flex gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                                <Bot className="w-4 h-4 text-purple-400" />
+                            </div>
+                            <div className="flex-1 rounded-lg p-3 bg-[var(--bg-tertiary)]">
+                                <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                            </div>
+                        </div>
+                    )}
+
+                    <div ref={messagesEndRef} />
+                </div>
+
+                {/* Apply Fix Button */}
+                {suggestedFix && (
+                    <div className="px-4 py-3 border-t border-[var(--border-secondary)] bg-purple-500/5">
+                        <button
+                            onClick={handleApplyFix}
+                            className="w-full btn-primary justify-center"
+                        >
+                            <Check className="w-4 h-4" />
+                            Apply Changes
                         </button>
                     </div>
                 )}
 
-                {/* Response */}
-                {response && (
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-surface-400">AI Response</span>
-                            <div className="flex items-center gap-1">
-                                <button onClick={handleCopy} title="Copy" className="btn-ghost p-1">
-                                    {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
-                                <button onClick={() => { setResponse(""); }} title="Retry" className="btn-ghost p-1">
-                                    <RotateCcw className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
-                        </div>
-                        <div ref={responseRef} className="bg-surface-900/50 rounded-lg p-3 max-h-60 overflow-y-auto">
-                            <pre className="text-xs text-surface-300 whitespace-pre-wrap font-mono">{response}</pre>
-                        </div>
-                        <div className="flex justify-end">
-                            <button onClick={handleApply} className="btn-primary text-sm">
-                                Apply to Editor
-                            </button>
-                        </div>
+                {/* Input */}
+                <div className="p-4 border-t border-[var(--border-secondary)]">
+                    <div className="flex gap-2">
+                        <textarea
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder={
+                                mode === "fix"
+                                    ? "Ask me to fix something..."
+                                    : "Ask me to write something..."
+                            }
+                            rows={1}
+                            className="flex-1 input-field resize-none min-h-[40px] max-h-[120px]"
+                            style={{ height: "auto" }}
+                        />
+                        <button
+                            onClick={handleSend}
+                            disabled={!input.trim() || isLoading}
+                            className="btn-primary"
+                        >
+                            <Send className="w-4 h-4" />
+                        </button>
                     </div>
-                )}
+                    <p className="text-xs text-[var(--text-muted)] mt-2">
+                        Press Enter to send, Shift+Enter for new line
+                    </p>
+                </div>
             </div>
-        </div>
+        </>
+    );
+}
+
+function SuggestionChip({
+    text,
+    onClick,
+}: {
+    text: string;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            className="text-sm px-3 py-1.5 rounded-full bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors border border-[var(--border-secondary)]"
+        >
+            {text}
+        </button>
     );
 }

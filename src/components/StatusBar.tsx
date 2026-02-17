@@ -1,7 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { editor as MonacoEditor } from "monaco-editor";
+import {
+    CheckCircle,
+    AlertCircle,
+    AlertTriangle,
+    Loader2,
+    Type,
+    FileCode,
+    Clock,
+} from "lucide-react";
 
 interface StatusBarProps {
     compiling: boolean;
@@ -20,100 +29,127 @@ export function StatusBar({
     editorRef,
     fileName,
 }: StatusBarProps) {
-    const [line, setLine] = useState(1);
-    const [col, setCol] = useState(1);
+    const [position, setPosition] = useState({ line: 1, column: 1 });
     const [wordCount, setWordCount] = useState(0);
+    const [charCount, setCharCount] = useState(0);
 
-    // Listen for cursor position changes
     useEffect(() => {
         const editor = editorRef.current;
         if (!editor) return;
 
-        const disposable = editor.onDidChangeCursorPosition((e: { position: { lineNumber: number; column: number } }) => {
-            setLine(e.position.lineNumber);
-            setCol(e.position.column);
-        });
+        const updatePosition = () => {
+            const pos = editor.getPosition();
+            if (pos) {
+                setPosition({ line: pos.lineNumber, column: pos.column });
+            }
+        };
 
-        return () => disposable.dispose();
-    }, [editorRef]);
-
-    // Listen for content changes (word count)
-    useEffect(() => {
-        const editor = editorRef.current;
-        if (!editor) return;
-
-        const updateWordCount = () => {
+        const updateCounts = () => {
             const model = editor.getModel();
             if (model) {
-                const text = model.getValue();
-                const words = text
-                    .replace(/\\[a-zA-Z]+(\{[^}]*\})?/g, "")
-                    .replace(/[{}\\[\]$%&]/g, "")
-                    .trim()
-                    .split(/\s+/)
-                    .filter(Boolean);
+                const content = model.getValue();
+                setCharCount(content.length);
+                // Simple word count - split by whitespace
+                const words = content.trim().split(/\s+/).filter((w) => w.length > 0);
                 setWordCount(words.length);
             }
         };
 
-        updateWordCount();
-        const disposable = editor.onDidChangeModelContent(() => {
-            updateWordCount();
-        });
+        // Update on cursor position change
+        const disposable = editor.onDidChangeCursorPosition(updatePosition);
 
-        return () => disposable.dispose();
+        // Update counts on content change
+        const contentDisposable = editor.onDidChangeModelContent(updateCounts);
+
+        // Initial update
+        updatePosition();
+        updateCounts();
+
+        return () => {
+            disposable.dispose();
+            contentDisposable.dispose();
+        };
     }, [editorRef]);
 
-    const getStatusText = () => {
-        if (compiling) return "Compiling…";
-        if (hasCompiledPdf) return "Compiled";
-        return "Ready";
-    };
-
-    const getStatusColor = () => {
-        if (compiling) return "text-warning";
-        if (errorCount > 0) return "text-danger";
-        if (hasCompiledPdf) return "text-success";
-        return "text-surface-500";
-    };
-
-    const getStatusDot = () => {
-        if (compiling) return "bg-warning";
-        if (errorCount > 0) return "bg-danger";
-        if (hasCompiledPdf) return "bg-success";
-        return "bg-surface-600";
+    const getCompileStatus = () => {
+        if (compiling) {
+            return (
+                <>
+                    <Loader2 className="w-3 h-3 animate-spin text-yellow-400" />
+                    <span className="text-yellow-400">Compiling...</span>
+                </>
+            );
+        }
+        if (errorCount > 0) {
+            return (
+                <>
+                    <AlertCircle className="w-3 h-3 text-red-400" />
+                    <span className="text-red-400">
+                        {errorCount} error{errorCount !== 1 ? "s" : ""}
+                    </span>
+                </>
+            );
+        }
+        if (warningCount > 0) {
+            return (
+                <>
+                    <AlertTriangle className="w-3 h-3 text-yellow-400" />
+                    <span className="text-yellow-400">
+                        {warningCount} warning{warningCount !== 1 ? "s" : ""}
+                    </span>
+                </>
+            );
+        }
+        if (hasCompiledPdf) {
+            return (
+                <>
+                    <CheckCircle className="w-3 h-3 text-emerald-400" />
+                    <span className="text-emerald-400">Compiled</span>
+                </>
+            );
+        }
+        return (
+            <>
+                <Clock className="w-3 h-3 text-[var(--text-muted)]" />
+                <span className="text-[var(--text-muted)]">Ready</span>
+            </>
+        );
     };
 
     return (
-        <div
-            role="status"
-            aria-label="Editor status bar"
-            className="h-6 bg-surface-900/90 border-t border-surface-800/50 flex items-center justify-between px-3 text-[11px] text-surface-500 shrink-0 select-none"
-        >
-            <div className="flex items-center gap-3">
-                <span className="font-medium text-surface-400">{fileName}</span>
-
-                <div className="flex items-center gap-1.5">
-                    <div className={`w-1.5 h-1.5 rounded-full ${getStatusDot()} ${compiling ? "animate-pulse" : ""}`} />
-                    <span className={getStatusColor()}>{getStatusText()}</span>
-                </div>
-
-                {errorCount > 0 && (
-                    <span className="text-danger font-medium">
-                        {errorCount} error{errorCount !== 1 ? "s" : ""}
-                    </span>
-                )}
-                {warningCount > 0 && (
-                    <span className="text-warning font-medium">
-                        {warningCount} warning{warningCount !== 1 ? "s" : ""}
-                    </span>
-                )}
+        <div className="h-7 bg-[var(--bg-secondary)] border-t border-[var(--border-secondary)] flex items-center px-3 text-xs">
+            {/* Left Section - Compile Status */}
+            <div className="flex items-center gap-2">
+                {getCompileStatus()}
             </div>
 
+            {/* Center - Spacer */}
+            <div className="flex-1" />
+
+            {/* Right Section - Editor Info */}
             <div className="flex items-center gap-4">
-                <span>Ln {line}, Col {col}</span>
-                <span>{wordCount} words</span>
-                <span className="text-surface-600">pdfLaTeX</span>
+                {/* File Info */}
+                <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
+                    <FileCode className="w-3 h-3" />
+                    <span>{fileName}</span>
+                </div>
+
+                {/* Position */}
+                <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
+                    <span>Ln {position.line}</span>
+                    <span>Col {position.column}</span>
+                </div>
+
+                {/* Word Count */}
+                <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
+                    <Type className="w-3 h-3" />
+                    <span>{wordCount.toLocaleString()} words</span>
+                </div>
+
+                {/* Encoding */}
+                <div className="hidden sm:flex items-center gap-1.5 text-[var(--text-muted)]">
+                    <span>UTF-8</span>
+                </div>
             </div>
         </div>
     );

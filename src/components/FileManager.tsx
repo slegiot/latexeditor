@@ -1,19 +1,29 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState } from "react";
 import {
-    X,
-    FolderOpen,
-    Upload,
-    Trash2,
-    Copy,
-    Check,
-    FileImage,
+    Folder,
     FileText,
-    Loader2,
-    File,
+    Image,
+    FileCode,
+    MoreVertical,
+    Plus,
+    ChevronRight,
+    ChevronDown,
+    Trash2,
+    Edit3,
+    Upload,
+    X,
 } from "lucide-react";
-import { createBrowserClient } from "@supabase/ssr";
+
+interface FileNode {
+    id: string;
+    name: string;
+    type: "file" | "folder";
+    fileType?: "tex" | "bib" | "png" | "jpg" | "pdf" | "other";
+    children?: FileNode[];
+    isOpen?: boolean;
+}
 
 interface FileManagerProps {
     open: boolean;
@@ -21,212 +31,244 @@ interface FileManagerProps {
     onClose: () => void;
 }
 
-interface ProjectFile {
-    name: string;
-    size: number;
-    type: string;
-    url: string;
-    created_at: string;
-}
+const mockFiles: FileNode[] = [
+    {
+        id: "1",
+        name: "main.tex",
+        type: "file",
+        fileType: "tex",
+    },
+    {
+        id: "2",
+        name: "sections",
+        type: "folder",
+        isOpen: true,
+        children: [
+            { id: "2-1", name: "introduction.tex", type: "file", fileType: "tex" },
+            { id: "2-2", name: "methods.tex", type: "file", fileType: "tex" },
+            { id: "2-3", name: "results.tex", type: "file", fileType: "tex" },
+            { id: "2-4", name: "conclusion.tex", type: "file", fileType: "tex" },
+        ],
+    },
+    {
+        id: "3",
+        name: "references.bib",
+        type: "file",
+        fileType: "bib",
+    },
+    {
+        id: "4",
+        name: "figures",
+        type: "folder",
+        isOpen: false,
+        children: [
+            { id: "4-1", name: "figure1.png", type: "file", fileType: "png" },
+            { id: "4-2", name: "figure2.jpg", type: "file", fileType: "jpg" },
+            { id: "4-3", name: "diagram.pdf", type: "file", fileType: "pdf" },
+        ],
+    },
+];
 
 export function FileManager({ open, projectId, onClose }: FileManagerProps) {
-    const [files, setFiles] = useState<ProjectFile[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [uploading, setUploading] = useState(false);
-    const [dragOver, setDragOver] = useState(false);
-    const [copied, setCopied] = useState<string | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [files, setFiles] = useState<FileNode[]>(mockFiles);
+    const [activeFile, setActiveFile] = useState<string>("1");
+    const [contextMenu, setContextMenu] = useState<{
+        x: number;
+        y: number;
+        fileId: string;
+    } | null>(null);
 
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const toggleFolder = (id: string) => {
+        const toggleNode = (nodes: FileNode[]): FileNode[] => {
+            return nodes.map((node) => {
+                if (node.id === id) {
+                    return { ...node, isOpen: !node.isOpen };
+                }
+                if (node.children) {
+                    return { ...node, children: toggleNode(node.children) };
+                }
+                return node;
+            });
+        };
+        setFiles(toggleNode(files));
+    };
 
-    const fetchFiles = useCallback(async () => {
-        setLoading(true);
-        try {
-            const { data, error } = await supabase.storage
-                .from("project-assets")
-                .list(projectId);
+    const handleContextMenu = (e: React.MouseEvent, fileId: string) => {
+        e.preventDefault();
+        setContextMenu({ x: e.clientX, y: e.clientY, fileId });
+    };
 
-            if (error) throw error;
-            if (data) {
-                const fileList: ProjectFile[] = data.map((f) => ({
-                    name: f.name,
-                    size: f.metadata?.size || 0,
-                    type: f.metadata?.mimetype || "unknown",
-                    url: supabase.storage
-                        .from("project-assets")
-                        .getPublicUrl(`${projectId}/${f.name}`).data.publicUrl,
-                    created_at: f.created_at,
-                }));
-                setFiles(fileList);
-            }
-        } catch (err) {
-            console.error("Error fetching files:", err);
-        } finally {
-            setLoading(false);
+    const handleCloseContextMenu = () => {
+        setContextMenu(null);
+    };
+
+    const getFileIcon = (fileType?: string) => {
+        switch (fileType) {
+            case "tex":
+                return <FileCode className="w-4 h-4 text-emerald-400" />;
+            case "bib":
+                return <FileText className="w-4 h-4 text-yellow-400" />;
+            case "png":
+            case "jpg":
+                return <Image className="w-4 h-4 text-purple-400" />;
+            case "pdf":
+                return <FileText className="w-4 h-4 text-red-400" />;
+            default:
+                return <FileText className="w-4 h-4 text-[var(--text-muted)]" />;
         }
-    }, [projectId, supabase]);
-
-    useEffect(() => {
-        if (open) fetchFiles();
-    }, [open, fetchFiles]);
-
-    const handleUpload = async (fileList: FileList) => {
-        setUploading(true);
-        try {
-            for (const file of Array.from(fileList)) {
-                const path = `${projectId}/${file.name}`;
-                const { error } = await supabase.storage
-                    .from("project-assets")
-                    .upload(path, file, { upsert: true });
-                if (error) throw error;
-            }
-            await fetchFiles();
-        } catch (err) {
-            console.error("Upload error:", err);
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const handleDelete = async (fileName: string) => {
-        if (!confirm(`Delete "${fileName}"?`)) return;
-        try {
-            const { error } = await supabase.storage
-                .from("project-assets")
-                .remove([`${projectId}/${fileName}`]);
-            if (error) throw error;
-            setFiles((prev) => prev.filter((f) => f.name !== fileName));
-        } catch (err) {
-            console.error("Delete error:", err);
-        }
-    };
-
-    const handleCopySnippet = (file: ProjectFile) => {
-        const isImage = file.type.startsWith("image/");
-        const snippet = isImage
-            ? `\\includegraphics{${file.name}}`
-            : `\\bibliography{${file.name.replace(/\.\w+$/, "")}}`;
-        navigator.clipboard.writeText(snippet);
-        setCopied(file.name);
-        setTimeout(() => setCopied(null), 2000);
-    };
-
-    const handleDrop = useCallback(
-        (e: React.DragEvent) => {
-            e.preventDefault();
-            setDragOver(false);
-            if (e.dataTransfer.files.length > 0) {
-                handleUpload(e.dataTransfer.files);
-            }
-        },
-        [handleUpload]
-    );
-
-    const formatSize = (bytes: number) => {
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    };
-
-    const getFileIcon = (type: string) => {
-        if (type.startsWith("image/")) return <FileImage className="w-4 h-4 text-blue-400" />;
-        if (type === "application/pdf") return <FileText className="w-4 h-4 text-red-400" />;
-        return <File className="w-4 h-4 text-surface-400" />;
     };
 
     if (!open) return null;
 
     return (
-        <div
-            className="absolute left-0 top-0 bottom-0 w-72 glass border-r border-surface-800/50 flex flex-col z-30 animate-slide-in-right"
-            style={{ animationDirection: "reverse", animationName: "none" }}
-            onDragOver={(e) => {
-                e.preventDefault();
-                setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-        >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800/50 shrink-0">
-                <div className="flex items-center gap-2 text-white text-sm font-semibold">
-                    <FolderOpen className="w-4 h-4 text-accent-400" />
-                    <span>Files</span>
-                </div>
-                <button onClick={onClose} className="btn-ghost p-1" aria-label="Close">
-                    <X className="w-4 h-4" />
-                </button>
-            </div>
+        <>
+            {/* Mobile overlay */}
+            <div
+                className="fixed inset-0 bg-black/50 lg:hidden z-40"
+                onClick={onClose}
+            />
 
-            {/* Upload */}
-            <div className="px-3 py-3 border-b border-surface-800/50 shrink-0">
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    onChange={(e) => e.target.files && handleUpload(e.target.files)}
-                    className="hidden"
-                />
-                <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="btn-secondary w-full justify-center text-xs"
-                >
-                    {uploading ? <Loader2 className="w-3.5 h-3.5 icon-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                    {uploading ? "Uploading…" : "Upload Files"}
-                </button>
-                <p className="text-[11px] text-surface-600 text-center mt-1.5">or drag & drop files here</p>
-            </div>
-
-            {/* File list */}
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                {loading ? (
-                    <div className="flex items-center justify-center py-12">
-                        <Loader2 className="w-5 h-5 text-accent-400 icon-spin" />
+            {/* Sidebar */}
+            <div className="fixed left-0 top-14 bottom-0 w-64 bg-[var(--bg-secondary)] border-r border-[var(--border-secondary)] z-50 animate-slide-in-right lg:animate-none flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-secondary)]">
+                    <h3 className="font-semibold text-sm">Files</h3>
+                    <div className="flex items-center gap-1">
+                        <button
+                            className="p-1.5 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                            title="New file"
+                        >
+                            <Plus className="w-4 h-4" />
+                        </button>
+                        <button
+                            className="p-1.5 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                            title="Upload"
+                        >
+                            <Upload className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="p-1.5 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors lg:hidden"
+                            title="Close"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
                     </div>
-                ) : files.length === 0 ? (
-                    <p className="text-xs text-surface-500 text-center py-8">No files yet</p>
-                ) : (
-                    files.map((file) => (
-                        <div key={file.name} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface-800/30 transition-colors group">
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                                {getFileIcon(file.type)}
-                                <div className="min-w-0">
-                                    <p className="text-xs text-surface-300 truncate">{file.name}</p>
-                                    <p className="text-[10px] text-surface-600">{formatSize(file.size)}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                <button
-                                    onClick={() => handleCopySnippet(file)}
-                                    title="Copy LaTeX snippet"
-                                    className="btn-ghost p-1"
-                                >
-                                    {copied === file.name ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(file.name)}
-                                    title="Delete"
-                                    className="btn-ghost p-1 text-danger hover:text-danger"
-                                >
-                                    <Trash2 className="w-3 h-3" />
-                                </button>
-                            </div>
-                        </div>
-                    ))
-                )}
+                </div>
+
+                {/* File Tree */}
+                <div
+                    className="flex-1 overflow-y-auto p-2"
+                    onClick={handleCloseContextMenu}
+                >
+                    <FileTree
+                        nodes={files}
+                        activeFile={activeFile}
+                        onFileClick={setActiveFile}
+                        onToggleFolder={toggleFolder}
+                        onContextMenu={handleContextMenu}
+                        getFileIcon={getFileIcon}
+                    />
+                </div>
+
+                {/* Footer */}
+                <div className="px-4 py-3 border-t border-[var(--border-secondary)] text-xs text-[var(--text-muted)]">
+                    {projectId}
+                </div>
             </div>
 
-            {/* Drop zone overlay */}
-            {dragOver && (
-                <div className="absolute inset-0 bg-accent-500/10 border-2 border-dashed border-accent-400 rounded-xl flex flex-col items-center justify-center z-10">
-                    <Upload className="w-8 h-8 text-accent-400 mb-2" />
-                    <p className="text-sm text-accent-400 font-medium">Drop files here</p>
-                </div>
+            {/* Context Menu */}
+            {contextMenu && (
+                <>
+                    <div
+                        className="fixed inset-0 z-50"
+                        onClick={handleCloseContextMenu}
+                    />
+                    <div
+                        className="fixed z-50 w-48 py-1 rounded-lg glass-strong border border-[var(--border-primary)] shadow-xl animate-scale-in"
+                        style={{ left: contextMenu.x, top: contextMenu.y }}
+                    >
+                        <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors">
+                            <Edit3 className="w-4 h-4" />
+                            Rename
+                        </button>
+                        <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                        </button>
+                    </div>
+                </>
             )}
+        </>
+    );
+}
+
+interface FileTreeProps {
+    nodes: FileNode[];
+    activeFile: string;
+    onFileClick: (id: string) => void;
+    onToggleFolder: (id: string) => void;
+    onContextMenu: (e: React.MouseEvent, fileId: string) => void;
+    getFileIcon: (fileType?: string) => React.ReactNode;
+    level?: number;
+}
+
+function FileTree({
+    nodes,
+    activeFile,
+    onFileClick,
+    onToggleFolder,
+    onContextMenu,
+    getFileIcon,
+    level = 0,
+}: FileTreeProps) {
+    return (
+        <div className="space-y-0.5">
+            {nodes.map((node) => (
+                <div key={node.id}>
+                    <div
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${node.type === "file" && activeFile === node.id
+                                ? "bg-emerald-500/10 text-emerald-400"
+                                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+                            }`}
+                        style={{ paddingLeft: `${level * 12 + 8}px` }}
+                        onClick={() =>
+                            node.type === "folder"
+                                ? onToggleFolder(node.id)
+                                : onFileClick(node.id)
+                        }
+                        onContextMenu={(e) => onContextMenu(e, node.id)}
+                    >
+                        {node.type === "folder" ? (
+                            <>
+                                {node.isOpen ? (
+                                    <ChevronDown className="w-4 h-4 flex-shrink-0" />
+                                ) : (
+                                    <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                                )}
+                                <Folder className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                            </>
+                        ) : (
+                            <>
+                                <span className="w-4 flex-shrink-0" />
+                                {getFileIcon(node.fileType)}
+                            </>
+                        )}
+                        <span className="text-sm truncate flex-1">{node.name}</span>
+                    </div>
+                    {node.type === "folder" && node.isOpen && node.children && (
+                        <FileTree
+                            nodes={node.children}
+                            activeFile={activeFile}
+                            onFileClick={onFileClick}
+                            onToggleFolder={onToggleFolder}
+                            onContextMenu={onContextMenu}
+                            getFileIcon={getFileIcon}
+                            level={level + 1}
+                        />
+                    )}
+                </div>
+            ))}
         </div>
     );
 }
