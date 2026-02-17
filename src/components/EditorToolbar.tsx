@@ -12,6 +12,7 @@ import {
     History,
     Sparkles,
     FolderOpen,
+    Settings,
 } from "lucide-react";
 import Link from "next/link";
 import { PresenceAvatars } from "./PresenceAvatars";
@@ -33,6 +34,7 @@ interface ToolbarProps {
     onToggleHistory: () => void;
     onToggleAI: () => void;
     onToggleFiles: () => void;
+    onToggleSettings: () => void;
     offlineDraft: boolean;
     connected: boolean;
     peers: Peer[];
@@ -55,6 +57,7 @@ export function EditorToolbar({
     onToggleHistory,
     onToggleAI,
     onToggleFiles,
+    onToggleSettings,
     offlineDraft,
     connected,
     peers,
@@ -141,6 +144,16 @@ export function EditorToolbar({
                 >
                     <FolderOpen className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Files</span>
+                </button>
+
+                {/* Settings */}
+                <button
+                    onClick={onToggleSettings}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-[var(--color-glass-hover)] transition-colors"
+                    title="Editor Settings"
+                >
+                    <Settings className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Settings</span>
                 </button>
 
                 <div className="h-5 w-px bg-[var(--color-glass-border)] mx-0.5" />

@@ -8,6 +8,9 @@ import { EditorToolbar } from "./EditorToolbar";
 import { HistoryPanel } from "./HistoryPanel";
 import { AISidebar } from "./AISidebar";
 import { FileManager } from "./FileManager";
+import { StatusBar } from "./StatusBar";
+import { ToastContainer, useToasts } from "./Toast";
+import { EditorSettings } from "./EditorSettings";
 import { createAutoSave, getDraft, deleteDraft } from "@/lib/drafts";
 import {
     LATEX_LANGUAGE_ID,
@@ -58,7 +61,54 @@ export function EditorPage({
     const [showHistory, setShowHistory] = useState(false);
     const [showAI, setShowAI] = useState(false);
     const [showFiles, setShowFiles] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
     const [aiMode, setAiMode] = useState<"fix" | "generate">("fix");
+
+    // Toast notifications
+    const { toasts, addToast, dismissToast } = useToasts();
+
+    // Keyboard shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Ignore if user is typing in an input
+            if (
+                e.target instanceof HTMLInputElement ||
+                e.target instanceof HTMLTextAreaElement
+            ) {
+                return;
+            }
+
+            // Ctrl/Cmd + \ : Toggle sidebar (files)
+            if ((e.ctrlKey || e.metaKey) && e.key === "\\") {
+                e.preventDefault();
+                setShowFiles((prev) => !prev);
+                setShowAI(false);
+            }
+
+            // Ctrl/Cmd + Shift + P : Toggle PDF preview
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "P") {
+                e.preventDefault();
+                setShowPdf((prev) => !prev);
+            }
+
+            // Ctrl/Cmd + Shift + H : Toggle history
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "H") {
+                e.preventDefault();
+                setShowHistory((prev) => !prev);
+            }
+
+            // Escape : Close any open panel
+            if (e.key === "Escape") {
+                setShowAI(false);
+                setShowFiles(false);
+                setShowHistory(false);
+                setShowSettings(false);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
 
     const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
     const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
@@ -178,7 +228,7 @@ export function EditorPage({
             },
         });
 
-        // Custom theme
+        // Custom themes
         monaco.editor.defineTheme("latexforge-dark", {
             base: "vs-dark",
             inherit: true,
@@ -211,7 +261,53 @@ export function EditorPage({
             },
         });
 
-        monaco.editor.setTheme("latexforge-dark");
+        // Light theme
+        monaco.editor.defineTheme("latexforge-light", {
+            base: "vs",
+            inherit: true,
+            rules: [
+                { token: "comment", foreground: "6A9955", fontStyle: "italic" },
+                { token: "keyword", foreground: "059669" },
+                { token: "keyword.command", foreground: "2563EB" },
+                {
+                    token: "keyword.section",
+                    foreground: "7C3AED",
+                    fontStyle: "bold",
+                },
+                { token: "keyword.formatting", foreground: "D97706" },
+                { token: "keyword.math", foreground: "DC2626" },
+                { token: "keyword.math-command", foreground: "B45309" },
+                { token: "keyword.escape", foreground: "374151" },
+                { token: "string.math", foreground: "DC2626" },
+                { token: "delimiter.curly", foreground: "CA8A04" },
+                { token: "delimiter.bracket", foreground: "7C3AED" },
+                { token: "number", foreground: "059669" },
+            ],
+            colors: {
+                "editor.background": "#ffffff",
+                "editor.foreground": "#1f2937",
+                "editor.lineHighlightBackground": "#f3f4f6",
+                "editorCursor.foreground": "#10B981",
+                "editor.selectionBackground": "#10B98122",
+                "editorLineNumber.foreground": "#9ca3af",
+                "editorLineNumber.activeForeground": "#6b7280",
+            },
+        });
+
+        // Set theme based on current mode
+        const isLight = document.documentElement.classList.contains("light");
+        monaco.editor.setTheme(isLight ? "latexforge-light" : "latexforge-dark");
+
+        // Listen for theme changes
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === "class") {
+                    const light = document.documentElement.classList.contains("light");
+                    monaco.editor.setTheme(light ? "latexforge-light" : "latexforge-dark");
+                }
+            });
+        });
+        observer.observe(document.documentElement, { attributes: true });
 
         // ── Yjs ↔ Monaco binding ──
         const yText = getYText();
@@ -289,6 +385,13 @@ export function EditorPage({
         setCompiling(true);
         clearMarkers();
 
+        // Show compiling toast
+        addToast({
+            type: "compiling",
+            title: "Compiling document...",
+            message: "Running pdfLaTeX",
+        });
+
         try {
             // Read content from Yjs doc, fall back to Monaco editor model
             let content = getContent();
@@ -333,8 +436,24 @@ export function EditorPage({
             if (data.errors && data.errors.length > 0) {
                 setErrors(data.errors);
                 setEditorMarkers(data.errors);
+
+                // Show error toast
+                const errorCount = data.errors.filter((e: LatexError) => e.severity === "error").length;
+                const warningCount = data.errors.filter((e: LatexError) => e.severity === "warning").length;
+                addToast({
+                    type: errorCount > 0 ? "error" : "warning",
+                    title: errorCount > 0 ? "Compilation failed" : "Compilation completed with warnings",
+                    message: `${errorCount} error${errorCount !== 1 ? "s" : ""}, ${warningCount} warning${warningCount !== 1 ? "s" : ""}`,
+                    errors: data.errors,
+                });
             } else {
                 setErrors([]);
+                // Show success toast
+                addToast({
+                    type: "success",
+                    title: "Compilation successful",
+                    message: "PDF generated successfully",
+                });
             }
         } catch {
             setErrors([
@@ -362,7 +481,17 @@ export function EditorPage({
                 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
             );
 
-            const content = getContent();
+            // Read content from Yjs, fall back to Monaco editor model
+            let content = getContent();
+            if (!content && editorRef.current) {
+                content = editorRef.current.getModel()?.getValue() ?? "";
+            }
+
+            if (!content) {
+                setSaveStatus("error");
+                setSaving(false);
+                return;
+            }
 
             if (documentId) {
                 await supabase
@@ -457,6 +586,7 @@ export function EditorPage({
                     setShowFiles((prev) => !prev);
                     setShowAI(false);
                 }}
+                onToggleSettings={() => setShowSettings((prev) => !prev)}
                 offlineDraft={offlineDraft}
                 connected={connected}
                 peers={peers}
@@ -558,6 +688,16 @@ export function EditorPage({
                             ))}
                         </div>
                     )}
+
+                    {/* Status Bar */}
+                    <StatusBar
+                        compiling={compiling}
+                        hasCompiledPdf={!!pdfUrl}
+                        errorCount={errors.filter((e) => e.severity === "error").length}
+                        warningCount={errors.filter((e) => e.severity === "warning").length}
+                        editorRef={editorRef}
+                        fileName="main.tex"
+                    />
                 </div>
 
                 {/* Resizable divider */}
@@ -662,6 +802,15 @@ export function EditorPage({
                     open={showFiles}
                     projectId={project.id}
                     onClose={() => setShowFiles(false)}
+                />
+
+                {/* Toast Notifications */}
+                <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+                {/* Settings Modal */}
+                <EditorSettings
+                    open={showSettings}
+                    onClose={() => setShowSettings(false)}
                 />
             </div>
         </div>
