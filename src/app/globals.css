@@ -366,6 +366,27 @@ body {
   }
 }
 
+/* ──────────────── Tablet Responsive ──────────────── */
+@media (min-width: 769px) and (max-width: 1024px) {
+
+  /* Tablet-specific adjustments */
+  .toolbar-label-hide {
+    display: none;
+  }
+
+  /* Larger touch targets for tablets with touch */
+  .btn-primary,
+  .btn-secondary {
+    min-height: 40px;
+  }
+
+  /* Adjust editor for tablet */
+  .editor-container {
+    font-size: 13px;
+  }
+}
+
+/* ──────────────── Small mobile ──────────────── */
 @media (max-width: 480px) {
 
   .btn-primary,
