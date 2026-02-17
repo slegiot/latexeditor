@@ -8,6 +8,30 @@
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "deepseek/deepseek-r1-0528";
 
+/**
+ * Platform context injected into all AI prompts so the model understands
+ * the LatexForge compilation environment and available features.
+ */
+const PLATFORM_CONTEXT = `
+PLATFORM CONTEXT — LatexForge:
+- Compilation: Alpine Linux, TeX Live 2025, pdflatex (not XeLaTeX or LuaLaTeX)
+- Installed packages: texmf-dist-most, mathscience, pictures, fontsextra, bibtexextra
+  These include: amsmath, amssymb, graphicx, tikz, pgfplots, chemfig, circuitikz,
+  geometry, hyperref, booktabs, listings, xcolor, natbib, biblatex, and many more.
+- File uploads: Users can upload images (.png, .jpg, .pdf) and .bib files via the
+  "Files" panel in the editor. Reference them with \\includegraphics{filename.png}
+  or \\bibliography{filename}.
+- For graphs, charts, and diagrams: STRONGLY PREFER inline TikZ or PGFplots code
+  over referencing external image files. This ensures the document compiles
+  independently without needing separate files.
+- For missing figure/file errors (e.g. "File not found"): suggest the user either
+  upload the file via the Files panel, OR replace the \\includegraphics with
+  inline TikZ/PGFplots code.
+- For font errors: remember only pdflatex is available, not XeLaTeX. Avoid
+  fontspec, use standard LaTeX font packages instead.
+- Encoding: use \\usepackage[utf8]{inputenc} for UTF-8 support.
+`.trim();
+
 function getApiKey(): string {
     const key = process.env.OPENROUTER_API_KEY;
     if (!key) throw new Error("OPENROUTER_API_KEY is not set");
@@ -129,7 +153,11 @@ export function fixLatexErrors(
         messages: [
             {
                 role: "system",
-                content: `You are a LaTeX expert. The user has a LaTeX document with compilation errors.
+                content: `You are a LaTeX expert assistant for LatexForge.
+
+${PLATFORM_CONTEXT}
+
+The user has a LaTeX document with compilation errors.
 Analyze the errors and return the COMPLETE corrected LaTeX document.
 First, briefly explain what was wrong (2-3 sentences max).
 Then output the corrected document inside a single \`\`\`latex code fence.
@@ -152,8 +180,13 @@ export function generateFromPrompt(prompt: string): Promise<ReadableStream<Uint8
         messages: [
             {
                 role: "system",
-                content: `You are a LaTeX expert. Generate a complete, compilable LaTeX document based on the user's description.
+                content: `You are a LaTeX expert assistant for LatexForge.
+
+${PLATFORM_CONTEXT}
+
+Generate a complete, compilable LaTeX document based on the user's description.
 The document should be professional, well-structured, and use appropriate packages.
+For any graphs, charts, or diagrams, use inline TikZ or PGFplots code.
 Output ONLY the LaTeX code inside a single \`\`\`latex code fence. No other text before or after.`,
             },
             {

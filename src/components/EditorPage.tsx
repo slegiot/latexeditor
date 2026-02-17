@@ -7,6 +7,7 @@ import { MonacoBinding } from "y-monaco";
 import { EditorToolbar } from "./EditorToolbar";
 import { HistoryPanel } from "./HistoryPanel";
 import { AISidebar } from "./AISidebar";
+import { FileManager } from "./FileManager";
 import { createAutoSave, getDraft, deleteDraft } from "@/lib/drafts";
 import {
     LATEX_LANGUAGE_ID,
@@ -56,6 +57,7 @@ export function EditorPage({
     const [showPdf, setShowPdf] = useState(true);
     const [showHistory, setShowHistory] = useState(false);
     const [showAI, setShowAI] = useState(false);
+    const [showFiles, setShowFiles] = useState(false);
     const [aiMode, setAiMode] = useState<"fix" | "generate">("fix");
 
     const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
@@ -448,7 +450,12 @@ export function EditorPage({
                 onToggleHistory={() => setShowHistory((prev) => !prev)}
                 onToggleAI={() => {
                     setShowAI((prev) => !prev);
+                    setShowFiles(false);
                     if (errors.length > 0) setAiMode("fix");
+                }}
+                onToggleFiles={() => {
+                    setShowFiles((prev) => !prev);
+                    setShowAI(false);
                 }}
                 offlineDraft={offlineDraft}
                 connected={connected}
@@ -648,6 +655,13 @@ export function EditorPage({
                     }}
                     onClose={() => setShowAI(false)}
                     onModeChange={setAiMode}
+                />
+
+                {/* File Manager */}
+                <FileManager
+                    open={showFiles}
+                    projectId={project.id}
+                    onClose={() => setShowFiles(false)}
                 />
             </div>
         </div>

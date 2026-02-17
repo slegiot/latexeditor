@@ -80,6 +80,31 @@ export async function POST(request: NextRequest) {
             outputDir,
         });
 
+        // Download project assets into the job directory so \includegraphics works
+        if (projectId) {
+            try {
+                const assetSupabase = await createClient();
+                const { data: files } = await assetSupabase.storage
+                    .from("project-assets")
+                    .list(projectId, { limit: 100 });
+
+                for (const file of files ?? []) {
+                    if (file.name === ".emptyFolderPlaceholder") continue;
+                    const { data } = await assetSupabase.storage
+                        .from("project-assets")
+                        .download(`${projectId}/${file.name}`);
+                    if (data) {
+                        const buf = Buffer.from(await data.arrayBuffer());
+                        writeFileSync(path.join(jobDir, file.name), buf);
+                    }
+                }
+                console.info("[compile] assets downloaded", { projectId });
+            } catch (assetErr) {
+                console.warn("[compile] failed to download assets", assetErr);
+                // Non-blocking — compile anyway
+            }
+        }
+
         let log = "";
         let pdfGenerated = false;
 

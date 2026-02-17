@@ -11,6 +11,7 @@ import {
     FileText,
     History,
     Sparkles,
+    FolderOpen,
 } from "lucide-react";
 import Link from "next/link";
 import { PresenceAvatars } from "./PresenceAvatars";
@@ -31,6 +32,7 @@ interface ToolbarProps {
     onSave: () => void;
     onToggleHistory: () => void;
     onToggleAI: () => void;
+    onToggleFiles: () => void;
     offlineDraft: boolean;
     connected: boolean;
     peers: Peer[];
@@ -52,6 +54,7 @@ export function EditorToolbar({
     onSave,
     onToggleHistory,
     onToggleAI,
+    onToggleFiles,
     offlineDraft,
     connected,
     peers,
@@ -130,13 +133,23 @@ export function EditorToolbar({
                     <span className="hidden sm:inline">History</span>
                 </button>
 
+                {/* Files */}
+                <button
+                    onClick={onToggleFiles}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-[var(--color-glass-hover)] transition-colors"
+                    title="Project Files"
+                >
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Files</span>
+                </button>
+
                 <div className="h-5 w-px bg-[var(--color-glass-border)] mx-0.5" />
 
                 <button
                     onClick={onToggleAI}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${errorCount > 0
-                            ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
-                            : "hover:bg-[var(--color-glass-hover)]"
+                        ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+                        : "hover:bg-[var(--color-glass-hover)]"
                         }`}
                     title="AI Assistant"
                 >
