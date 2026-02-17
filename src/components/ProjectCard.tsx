@@ -55,15 +55,15 @@ export const ProjectCard = React.memo(function ProjectCard({ project, index }: P
     };
 
     return (
-        <Link href={`/editor/${project.id}`} className="block">
+        <Link href={`/editor/${project.id}`} className="block" data-project-card data-project-name={project.name}>
             <div
-                className={`group relative glass rounded-2xl p-5 transition-all duration-300 hover:shadow-[var(--shadow-card-hover)] hover:border-[var(--color-accent-500)]/30 cursor-pointer ${deleting ? "opacity-50 pointer-events-none" : ""
+                className={`group relative card-glass p-5 hover:translate-y-[-2px] cursor-pointer ${deleting ? "opacity-50 pointer-events-none" : ""
                     }`}
                 style={{ animation: `fade-in 0.4s ease ${0.05 * index}s both` }}
             >
                 {/* Header */}
                 <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-[var(--color-accent-500)]/10 flex items-center justify-center shrink-0 group-hover:bg-[var(--color-accent-500)]/20 transition-colors">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--color-accent-500)]/15 to-[var(--color-accent-700)]/10 flex items-center justify-center shrink-0 group-hover:from-[var(--color-accent-500)]/25 group-hover:to-[var(--color-accent-700)]/15 transition-all">
                         <FileText className="w-5 h-5 text-[var(--color-accent-400)]" />
                     </div>
 
@@ -83,18 +83,19 @@ export const ProjectCard = React.memo(function ProjectCard({ project, index }: P
                                 setMenuOpen(!menuOpen);
                             }}
                             className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-[var(--color-glass-hover)] transition-all"
+                            aria-label="Project options"
                         >
                             <MoreVertical className="w-4 h-4 text-[var(--color-surface-500)]" />
                         </button>
                         {menuOpen && (
-                            <div className="absolute right-0 top-full mt-1 w-40 glass rounded-xl overflow-hidden animate-scale-in origin-top-right shadow-[var(--shadow-card)] z-10">
+                            <div className="absolute right-0 top-full mt-1 w-44 glass rounded-xl overflow-hidden animate-scale-in origin-top-right shadow-[var(--shadow-card)] z-10">
                                 <button
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         handleDelete();
                                     }}
-                                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                     Delete Project
@@ -105,13 +106,13 @@ export const ProjectCard = React.memo(function ProjectCard({ project, index }: P
                 </div>
 
                 {/* Title */}
-                <h3 className="font-semibold text-base mb-1 truncate group-hover:text-[var(--color-accent-400)] transition-colors">
+                <h3 className="font-bold text-base mb-1 truncate group-hover:text-[var(--color-accent-400)] transition-colors">
                     {project.name}
                 </h3>
 
                 {/* Description */}
                 {project.description && (
-                    <p className="text-sm text-[var(--color-surface-600)] line-clamp-2 mb-4">
+                    <p className="text-sm text-[var(--color-surface-600)] line-clamp-2 mb-4 leading-relaxed">
                         {project.description}
                     </p>
                 )}
@@ -125,8 +126,8 @@ export const ProjectCard = React.memo(function ProjectCard({ project, index }: P
                     <div className="flex items-center gap-1 text-xs text-[var(--color-surface-500)]">
                         {project.is_public ? (
                             <>
-                                <Globe className="w-3.5 h-3.5" />
-                                Public
+                                <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                                <span className="text-emerald-400">Public</span>
                             </>
                         ) : (
                             <>

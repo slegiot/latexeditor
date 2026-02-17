@@ -28,14 +28,16 @@ export function ThemeToggle() {
     return (
         <button
             onClick={toggle}
-            className="p-2 rounded-xl glass glass-hover transition-all"
-            aria-label="Toggle theme"
+            className="p-2 rounded-xl glass glass-hover transition-all group"
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
         >
-            {theme === "dark" ? (
-                <Sun className="w-4.5 h-4.5 text-[var(--color-surface-600)]" />
-            ) : (
-                <Moon className="w-4.5 h-4.5 text-[var(--color-surface-600)]" />
-            )}
+            <div className="relative w-4.5 h-4.5">
+                {theme === "dark" ? (
+                    <Sun className="w-4.5 h-4.5 text-[var(--color-surface-600)] group-hover:text-amber-400 transition-colors" />
+                ) : (
+                    <Moon className="w-4.5 h-4.5 text-[var(--color-surface-600)] group-hover:text-indigo-400 transition-colors" />
+                )}
+            </div>
         </button>
     );
 }

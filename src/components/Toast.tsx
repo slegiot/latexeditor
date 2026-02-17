@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
     X,
     CheckCircle2,
@@ -32,13 +32,12 @@ interface ToastContainerProps {
 }
 
 export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
-    // Filter out dismissed toasts
     const activeToasts = toasts.filter((t) => !t.dismissed);
 
     if (activeToasts.length === 0) return null;
 
     return (
-        <div className="fixed bottom-12 right-4 z-50 flex flex-col gap-2 max-w-md w-full">
+        <div className="fixed bottom-12 right-4 z-50 flex flex-col gap-2.5 max-w-md w-full pointer-events-none">
             {activeToasts.map((toast) => (
                 <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
             ))}
@@ -54,6 +53,35 @@ interface ToastItemProps {
 function ToastItem({ toast, onDismiss }: ToastItemProps) {
     const [expanded, setExpanded] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [progress, setProgress] = useState(100);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Auto-dismiss: 5s for success/info, 8s for errors/warnings, never for compiling
+    const autoDismissMs =
+        toast.type === "compiling" ? 0 :
+            toast.type === "success" || toast.type === "info" ? 5000 : 8000;
+
+    useEffect(() => {
+        if (autoDismissMs <= 0) return;
+
+        // Progress bar countdown
+        const startTime = Date.now();
+        intervalRef.current = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const remaining = Math.max(0, 100 - (elapsed / autoDismissMs) * 100);
+            setProgress(remaining);
+        }, 50);
+
+        timerRef.current = setTimeout(() => {
+            onDismiss(toast.id);
+        }, autoDismissMs);
+
+        return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            if (intervalRef.current) clearInterval(intervalRef.current);
+        };
+    }, [toast.id, autoDismissMs, onDismiss]);
 
     const handleCopy = useCallback(() => {
         const text = toast.errors
@@ -81,20 +109,25 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
         }
     };
 
+    const getAccentColor = () => {
+        switch (toast.type) {
+            case "success": return "rgb(52, 211, 153)";
+            case "error": return "rgb(248, 113, 113)";
+            case "warning": return "rgb(251, 191, 36)";
+            case "info": return "rgb(96, 165, 250)";
+            case "compiling": return "rgb(52, 211, 153)";
+            default: return "rgb(96, 165, 250)";
+        }
+    };
+
     const getBorderColor = () => {
         switch (toast.type) {
-            case "success":
-                return "border-l-emerald-400";
-            case "error":
-                return "border-l-red-400";
-            case "warning":
-                return "border-l-amber-400";
-            case "info":
-                return "border-l-blue-400";
-            case "compiling":
-                return "border-l-[var(--color-accent-400)]";
-            default:
-                return "border-l-blue-400";
+            case "success": return "border-l-emerald-400";
+            case "error": return "border-l-red-400";
+            case "warning": return "border-l-amber-400";
+            case "info": return "border-l-blue-400";
+            case "compiling": return "border-l-[var(--color-accent-400)]";
+            default: return "border-l-blue-400";
         }
     };
 
@@ -104,29 +137,31 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
     return (
         <div
             className={`
-                glass rounded-lg overflow-hidden animate-scale-in shadow-[var(--shadow-card)]
+                pointer-events-auto glass rounded-xl overflow-hidden animate-toast shadow-[var(--shadow-card)]
                 border-l-4 ${getBorderColor()}
             `}
+            role="alert"
+            aria-live="polite"
         >
             {/* Header */}
-            <div className="flex items-start gap-3 p-3">
+            <div className="flex items-start gap-3 p-3.5">
                 <div className="shrink-0 mt-0.5">{getIcon()}</div>
                 <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{toast.title}</p>
+                    <p className="text-sm font-semibold">{toast.title}</p>
                     {toast.message && (
                         <p className="text-xs text-[var(--color-surface-500)] mt-0.5 line-clamp-2">
                             {toast.message}
                         </p>
                     )}
                     {toast.errors && toast.errors.length > 0 && (
-                        <div className="flex items-center gap-3 mt-1.5">
+                        <div className="flex items-center gap-3 mt-2">
                             {errorCount > 0 && (
-                                <span className="text-xs text-red-400">
+                                <span className="text-xs text-red-400 font-medium">
                                     {errorCount} error{errorCount !== 1 ? "s" : ""}
                                 </span>
                             )}
                             {warningCount > 0 && (
-                                <span className="text-xs text-amber-400">
+                                <span className="text-xs text-amber-400 font-medium">
                                     {warningCount} warning{warningCount !== 1 ? "s" : ""}
                                 </span>
                             )}
@@ -137,24 +172,25 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
                                 {expanded ? (
                                     <>
                                         <ChevronUp className="w-3 h-3" />
-                                        Hide details
+                                        Hide
                                     </>
                                 ) : (
                                     <>
                                         <ChevronDown className="w-3 h-3" />
-                                        Show details
+                                        Details
                                     </>
                                 )}
                             </button>
                         </div>
                     )}
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-0.5 shrink-0">
                     {toast.errors && toast.errors.length > 0 && (
                         <button
                             onClick={handleCopy}
-                            className="p-1.5 rounded hover:bg-[var(--color-glass-hover)] transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-[var(--color-glass-hover)] transition-colors"
                             title="Copy errors"
+                            aria-label="Copy error details"
                         >
                             {copied ? (
                                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -165,8 +201,9 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
                     )}
                     <button
                         onClick={() => onDismiss(toast.id)}
-                        className="p-1.5 rounded hover:bg-[var(--color-glass-hover)] transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-[var(--color-glass-hover)] transition-colors"
                         title="Dismiss"
+                        aria-label="Dismiss notification"
                     >
                         <X className="w-4 h-4 text-[var(--color-surface-500)]" />
                     </button>
@@ -179,7 +216,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
                     {toast.errors.map((err, i) => (
                         <div
                             key={i}
-                            className="px-3 py-2 text-xs border-b border-[var(--color-glass-border)] last:border-b-0 hover:bg-[var(--color-glass-hover)]"
+                            className="px-3.5 py-2.5 text-xs border-b border-[var(--color-glass-border)] last:border-b-0 hover:bg-[var(--color-glass-hover)]"
                         >
                             <div className="flex items-center gap-2">
                                 {err.severity === "error" ? (
@@ -189,13 +226,27 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
                                 ) : (
                                     <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
                                 )}
-                                <span className="text-[var(--color-surface-400)]">
+                                <span className="text-[var(--color-surface-400)] font-mono">
                                     Ln {err.line}, Col {err.column}
                                 </span>
                             </div>
                             <p className="mt-1 text-[var(--color-surface-600)]">{err.message}</p>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Auto-dismiss progress bar */}
+            {autoDismissMs > 0 && (
+                <div className="h-0.5 bg-[var(--color-surface-200)]/20">
+                    <div
+                        className="h-full transition-all duration-100 ease-linear"
+                        style={{
+                            width: `${progress}%`,
+                            backgroundColor: getAccentColor(),
+                            opacity: 0.5,
+                        }}
+                    />
                 </div>
             )}
         </div>

@@ -315,6 +315,15 @@ export function EditorPage({
         const model = editor.getModel();
 
         if (yText && model) {
+            // Pre-populate Yjs doc with initial content if it's empty
+            // This ensures content is available even when WS server is unreachable
+            if (yText.length === 0 && initialContent) {
+                const doc = getDoc();
+                doc?.transact(() => {
+                    yText.insert(0, initialContent);
+                });
+            }
+
             bindingRef.current = new MonacoBinding(
                 yText,
                 model,
@@ -380,17 +389,25 @@ export function EditorPage({
     }, []);
 
     // ── Compile ──
+    const compilingToastIdRef = useRef<string | null>(null);
+
     const handleCompile = useCallback(async () => {
         if (compiling) return;
         setCompiling(true);
         clearMarkers();
 
-        // Show compiling toast
-        addToast({
+        // Dismiss any previous compiling toast
+        if (compilingToastIdRef.current) {
+            dismissToast(compilingToastIdRef.current);
+        }
+
+        // Show compiling toast and track its ID
+        const toastId = addToast({
             type: "compiling",
             title: "Compiling document...",
             message: "Running pdfLaTeX",
         });
+        compilingToastIdRef.current = toastId;
 
         try {
             // Read content from Yjs doc, fall back to Monaco editor model
@@ -465,11 +482,18 @@ export function EditorPage({
                 },
             ]);
         } finally {
+            // Always dismiss the compiling toast
+            if (compilingToastIdRef.current) {
+                dismissToast(compilingToastIdRef.current);
+                compilingToastIdRef.current = null;
+            }
             setCompiling(false);
         }
-    }, [compiling, project.id, clearMarkers, setEditorMarkers, getContent]);
+    }, [compiling, project.id, clearMarkers, setEditorMarkers, getContent, addToast, dismissToast]);
 
     // ── Save to Supabase ──
+    const documentIdRef = useRef(documentId);
+
     const handleSave = useCallback(async () => {
         if (saving) return;
         setSaving(true);
@@ -483,30 +507,41 @@ export function EditorPage({
 
             // Read content from Yjs, fall back to Monaco editor model
             let content = getContent();
-            if (!content && editorRef.current) {
+            if ((!content || content.trim().length === 0) && editorRef.current) {
                 content = editorRef.current.getModel()?.getValue() ?? "";
             }
 
-            if (!content) {
+            if (!content || content.trim().length === 0) {
                 setSaveStatus("error");
                 setSaving(false);
+                addToast({
+                    type: "warning",
+                    title: "Nothing to save",
+                    message: "The editor is empty. Write some content first.",
+                });
                 return;
             }
 
-            if (documentId) {
-                await supabase
+            if (documentIdRef.current) {
+                const { error } = await supabase
                     .from("documents")
                     .update({
                         content,
                         updated_at: new Date().toISOString(),
                     })
-                    .eq("id", documentId);
+                    .eq("id", documentIdRef.current);
+                if (error) throw error;
             } else {
-                await supabase.from("documents").insert({
+                // No document exists yet — insert and save the new ID
+                const { data: newDoc, error } = await supabase.from("documents").insert({
                     project_id: project.id,
                     title: "main.tex",
                     content,
-                });
+                }).select("id").single();
+                if (error) throw error;
+                if (newDoc) {
+                    documentIdRef.current = newDoc.id;
+                }
             }
 
             await supabase
@@ -518,6 +553,12 @@ export function EditorPage({
             setOfflineDraft(false);
             setSaveStatus("saved");
 
+            addToast({
+                type: "success",
+                title: "Saved",
+                message: "Your document has been saved successfully.",
+            });
+
             // Create version snapshot
             try {
                 await fetch("/api/versions", {
@@ -528,12 +569,18 @@ export function EditorPage({
             } catch {
                 // Silently fail — version history is non-critical
             }
-        } catch {
+        } catch (err) {
+            console.error("Save error:", err);
             setSaveStatus("error");
+            addToast({
+                type: "error",
+                title: "Save failed",
+                message: "Could not save your document. Please try again.",
+            });
         } finally {
             setSaving(false);
         }
-    }, [saving, documentId, project.id, getContent]);
+    }, [saving, project.id, getContent, addToast]);
 
     // ── Resizable divider ──
     const handleMouseDown = useCallback(() => {

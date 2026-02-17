@@ -135,21 +135,39 @@ export function StatusBar({
             </div>
 
             {/* Right section */}
-            <div className="flex items-center gap-4 text-[var(--color-surface-500)]">
+            <div className="flex items-center gap-1 text-[var(--color-surface-500)]">
                 {/* Word count */}
-                <div className="hidden sm:flex items-center gap-1.5">
+                <div className="hidden sm:flex items-center gap-1.5 px-2">
                     <span>{wordCount.toLocaleString()} words</span>
                 </div>
 
+                <span className="hidden sm:block text-[var(--color-surface-300)]">·</span>
+
                 {/* Cursor position */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 px-2">
                     <span>Ln {cursorPosition.line}</span>
                     <span className="text-[var(--color-surface-400)]">:</span>
                     <span>Col {cursorPosition.column}</span>
                 </div>
 
+                <span className="hidden md:block text-[var(--color-surface-300)]">·</span>
+
+                {/* Encoding */}
+                <div className="hidden md:flex items-center px-2">
+                    <span>UTF-8</span>
+                </div>
+
+                <span className="hidden md:block text-[var(--color-surface-300)]">·</span>
+
+                {/* Tab size */}
+                <div className="hidden md:flex items-center px-2">
+                    <span>Spaces: 2</span>
+                </div>
+
+                <span className="hidden md:block text-[var(--color-surface-300)]">·</span>
+
                 {/* LaTeX engine indicator */}
-                <div className="hidden md:flex items-center gap-1.5">
+                <div className="hidden md:flex items-center gap-1.5 px-2">
                     <Cpu className="w-3 h-3" />
                     <span>pdfLaTeX</span>
                 </div>

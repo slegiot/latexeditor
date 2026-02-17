@@ -74,61 +74,76 @@ function startPersistence(roomName) {
     const projectId = roomName.replace("project:", "");
     if (!projectId || projectId === roomName) return;
 
-    const intervalId = setInterval(async () => {
-        try {
-            const doc = getYDoc(roomName);
-            if (!doc) return;
+    // Delay the first save to avoid racing with initial DB load
+    const timeoutId = setTimeout(() => {
+        const intervalId = setInterval(async () => {
+            await saveRoom(roomName, projectId);
+        }, SAVE_INTERVAL_MS);
 
-            const yText = doc.getText("content");
-            const content = yText.toString();
-
-            if (!content || content.length === 0) return;
-
-            // Save to Supabase documents table
-            const { data: existingDoc } = await supabase
-                .from("documents")
-                .select("id")
-                .eq("project_id", projectId)
-                .order("created_at", { ascending: true })
-                .limit(1)
-                .single();
-
-            if (existingDoc) {
-                await supabase
-                    .from("documents")
-                    .update({
-                        content,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq("id", existingDoc.id);
-            } else {
-                await supabase.from("documents").insert({
-                    project_id: projectId,
-                    title: "main.tex",
-                    content,
-                });
-            }
-
-            // Also update project timestamp
-            await supabase
-                .from("projects")
-                .update({ updated_at: new Date().toISOString() })
-                .eq("id", projectId);
-
-            console.log(`💾 Saved room ${roomName} (${content.length} chars)`);
-        } catch (err) {
-            console.error(`❌ Persistence error for ${roomName}:`, err.message);
+        // Update entry with the interval ID
+        const entry = activeRooms.get(roomName);
+        if (entry) {
+            entry.intervalId = intervalId;
         }
-    }, SAVE_INTERVAL_MS);
+    }, 5000);
 
-    activeRooms.set(roomName, { projectId, intervalId });
+    activeRooms.set(roomName, { projectId, intervalId: null, timeoutId });
     console.log(`📌 Started persistence for ${roomName}`);
+}
+
+/** Save a room's Yjs doc content to Supabase */
+async function saveRoom(roomName, projectId) {
+    try {
+        const doc = getYDoc(roomName);
+        if (!doc) return;
+
+        const yText = doc.getText("content");
+        const content = yText.toString();
+
+        if (!content || content.length === 0) return;
+
+        // Save to Supabase documents table
+        const { data: existingDoc } = await supabase
+            .from("documents")
+            .select("id")
+            .eq("project_id", projectId)
+            .order("created_at", { ascending: true })
+            .limit(1)
+            .single();
+
+        if (existingDoc) {
+            await supabase
+                .from("documents")
+                .update({
+                    content,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq("id", existingDoc.id);
+        } else {
+            await supabase.from("documents").insert({
+                project_id: projectId,
+                title: "main.tex",
+                content,
+            });
+        }
+
+        // Also update project timestamp
+        await supabase
+            .from("projects")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", projectId);
+
+        console.log(`💾 Saved room ${roomName} (${content.length} chars)`);
+    } catch (err) {
+        console.error(`❌ Persistence error for ${roomName}:`, err.message);
+    }
 }
 
 function stopPersistence(roomName) {
     const entry = activeRooms.get(roomName);
     if (entry) {
-        clearInterval(entry.intervalId);
+        if (entry.intervalId) clearInterval(entry.intervalId);
+        if (entry.timeoutId) clearTimeout(entry.timeoutId);
         activeRooms.delete(roomName);
         console.log(`📌 Stopped persistence for ${roomName}`);
     }
@@ -197,12 +212,15 @@ wss.on("connection", async (ws, req) => {
     ws.on("close", () => {
         console.log(`👋 ${user.email} disconnected from ${roomName}`);
 
-        // Check if room is now empty
-        const clients = [...wss.clients].filter((c) => c.readyState === 1);
-        // Simple heuristic: if very few clients, check again after a delay
-        setTimeout(() => {
+        // Check if room is now empty; if so, do a final save and stop persistence
+        setTimeout(async () => {
             const remaining = [...wss.clients].filter((c) => c.readyState === 1);
             if (remaining.length === 0) {
+                // Final save before stopping persistence
+                const entry = activeRooms.get(roomName);
+                if (entry) {
+                    await saveRoom(roomName, entry.projectId);
+                }
                 stopPersistence(roomName);
             }
         }, 5000);

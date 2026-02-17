@@ -6,7 +6,7 @@
  */
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = "deepseek/deepseek-r1-0528";
+const MODEL = "deepseek/deepseek-chat-v3-0324";
 
 /**
  * Platform context injected into all AI prompts so the model understands
