@@ -288,8 +288,20 @@ export function EditorPage({
         clearMarkers();
 
         try {
-            // Read content from Yjs doc
-            const content = getContent();
+            // Read content from Yjs doc, fall back to Monaco editor model
+            let content = getContent();
+            if (!content && editorRef.current) {
+                content = editorRef.current.getModel()?.getValue() ?? "";
+            }
+
+            if (!content) {
+                setErrors([{
+                    line: 1, column: 1,
+                    message: "No content to compile — editor is empty",
+                    severity: "error",
+                }]);
+                return;
+            }
 
             const res = await fetch("/api/compile", {
                 method: "POST",
@@ -301,6 +313,15 @@ export function EditorPage({
             });
 
             const data = await res.json();
+
+            if (!res.ok && !data.pdfUrl) {
+                setErrors([{
+                    line: 1, column: 1,
+                    message: data.error || `Compilation request failed (${res.status})`,
+                    severity: "error",
+                }]);
+                return;
+            }
 
             if (data.pdfUrl) {
                 setPdfUrl(`${data.pdfUrl}?t=${Date.now()}`);
