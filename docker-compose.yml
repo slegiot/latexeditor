@@ -1,0 +1,148 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────
+# LaTeXForge — Multi-Service Architecture
+# ─────────────────────────────────────────────────────────────
+# web       — Next.js application server
+# collab    — Hocuspocus WebSocket server (Yjs collaboration)
+# redis     — BullMQ job queue & caching
+# worker    — Compilation job consumer
+# texlive   — Sandboxed TeX Live compiler (no network)
+# ─────────────────────────────────────────────────────────────
+
+services:
+  # ── Next.js Web Server ──────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: latexforge-web
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env.local
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=${NODE_ENV:-development}
+      - WS_URL=ws://collab:4444
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - compile_workspace:/tmp/latex-compile
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+
+  # ── Hocuspocus Collaboration Server ──────────────────────────
+  collab:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: latexforge-collab
+    restart: unless-stopped
+    command: [ "node", "dist/collaboration/server.js" ]
+    ports:
+      - "${WS_PORT:-4444}:4444"
+    env_file:
+      - .env.local
+    environment:
+      - WS_PORT=4444
+      - NODE_ENV=${NODE_ENV:-development}
+    healthcheck:
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:4444', (r) => process.exit(r.statusCode === 426 ? 0 : 1))" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+
+  # ── Redis (BullMQ Queue + Cache) ────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: latexforge-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes --save 60 1000
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Compilation Worker ──────────────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: latexforge-worker
+    restart: unless-stopped
+    command: [ "node", "dist/worker/index.js" ]
+    env_file:
+      - .env.local
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=${NODE_ENV:-development}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - compile_workspace:/tmp/latex-compile
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Needed to spawn texlive containers
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+
+  # ── TeX Live Sandbox ────────────────────────────────────────
+  # This service is NOT long-running. The worker spawns
+  # ephemeral containers from this image on each compile job.
+  # We define it here so `docker compose build` builds the image.
+  texlive:
+    build:
+      context: ./compile
+      dockerfile: Dockerfile
+    container_name: latexforge-texlive
+    image: latexforge-texlive:latest
+    # ── Security hardening ──
+    network_mode: "none" # No network access (blocks \write18 escapes)
+    read_only: true # Read-only root filesystem
+    tmpfs:
+      - /work:size=100M,mode=1777 # Writable workspace (ephemeral)
+      - /tmp:size=50M # Temp files for latexmk
+    cap_drop:
+      - ALL # Drop all Linux capabilities
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+          pids: 100 # Prevent fork-bombs
+    # This container exits immediately — it's only a build target
+    entrypoint: [ "echo", "TeX Live sandbox image built successfully" ]
+
+volumes:
+  redis_data:
+    driver: local
+  compile_workspace:
+    driver: local

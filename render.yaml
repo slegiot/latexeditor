@@ -1,0 +1,100 @@
+# ─────────────────────────────────────────────────────────────
+# LaTeXForge — Render Blueprint (Infrastructure as Code)
+# ─────────────────────────────────────────────────────────────
+# Deploy to Render with: Settings → Blueprint → Connect Repo
+#
+# Services:
+#   web    — Next.js application server
+#   worker — BullMQ compilation job consumer
+#   redis  — Managed Redis instance
+# ─────────────────────────────────────────────────────────────
+
+services:
+  # ── Next.js Web Server ──────────────────────────────────────
+  - type: web
+    name: latexforge-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    region: frankfurt
+    numInstances: 1
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+
+      # Supabase
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+
+      # Redis — reference the managed instance below
+      - key: REDIS_URL
+        fromService:
+          name: latexforge-redis
+          type: redis
+          property: connectionString
+
+      # Stripe
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_PRO_MONTHLY
+        sync: false
+      - key: STRIPE_PRICE_TEAM_MONTHLY
+        sync: false
+
+      # AI
+      - key: OPENROUTER_API_KEY
+        sync: false
+
+      # App
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+
+      # WebSocket collaboration server URL
+      - key: WS_URL
+        sync: false
+
+  # ── Compilation Worker ──────────────────────────────────────
+  - type: worker
+    name: latexforge-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    region: frankfurt
+    dockerCommand: "node dist/worker/index.js"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REDIS_URL
+        fromService:
+          name: latexforge-redis
+          type: redis
+          property: connectionString
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+
+  # ── Redis ───────────────────────────────────────────────────
+  - type: redis
+    name: latexforge-redis
+    plan: starter
+    region: frankfurt
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []  # Only internal access

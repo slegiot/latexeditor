@@ -1,0 +1,164 @@
+// ─────────────────────────────────────────────────────────────
+// LaTeXForge — Prisma Schema
+// ─────────────────────────────────────────────────────────────
+// Maps to the Supabase PostgreSQL tables for type-safe access.
+// Run `npx prisma generate` to create the client.
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Profile {
+  id                String   @id @default(uuid()) @db.Uuid
+  displayName       String?  @map("display_name")
+  avatarUrl         String?  @map("avatar_url")
+  stripeCustomerId  String?  @unique @map("stripe_customer_id")
+  subscriptionTier  String   @default("free") @map("subscription_tier")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  projects       Project[]
+  collaborations Collaborator[]
+  compilations   Compilation[]
+  uploadedAssets ProjectAsset[]
+  collabSessions CollaborationSession[]
+
+  @@map("profiles")
+}
+
+model Project {
+  id          String   @id @default(uuid()) @db.Uuid
+  ownerId     String   @map("owner_id") @db.Uuid
+  title       String   @default("Untitled Project")
+  description String?
+  compiler    String   @default("pdflatex")
+  template    String   @default("blank")
+  settings    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  owner         Profile        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  files         ProjectFile[]
+  assets        ProjectAsset[]
+  yjsDocuments  YjsDocument[]
+  collaborators Collaborator[]
+  compilations  Compilation[]
+
+  @@index([ownerId])
+  @@map("projects")
+}
+
+model ProjectFile {
+  id           String   @id @default(uuid()) @db.Uuid
+  projectId    String   @map("project_id") @db.Uuid
+  path         String
+  content      String   @default("")
+  isEntrypoint Boolean  @default(false) @map("is_entrypoint")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, path])
+  @@index([projectId])
+  @@map("project_files")
+}
+
+model Collaborator {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @map("project_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  role      String   @default("viewer")
+  joinedAt  DateTime @default(now()) @map("joined_at") @db.Timestamptz
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("collaborators")
+}
+
+model Compilation {
+  id          String   @id @default(uuid()) @db.Uuid
+  projectId   String   @map("project_id") @db.Uuid
+  triggeredBy String   @map("triggered_by") @db.Uuid
+  status      String   @default("queued")
+  pdfUrl      String?  @map("pdf_url")
+  log         String?
+  durationMs  Int?     @map("duration_ms")
+  engine      String   @default("pdflatex")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  triggerer Profile @relation(fields: [triggeredBy], references: [id])
+
+  @@index([projectId])
+  @@index([status])
+  @@map("compilations")
+}
+
+model ProjectAsset {
+  id          String   @id @default(uuid()) @db.Uuid
+  projectId   String   @map("project_id") @db.Uuid
+  path        String                            // e.g. "figures/diagram.png"
+  storageKey  String   @map("storage_key")      // Supabase Storage key
+  filename    String                            // Original filename
+  mimeType    String   @map("mime_type")
+  sizeBytes   BigInt   @default(0) @map("size_bytes")
+  directory   String   @default("figures")      // Virtual directory
+  width       Int?
+  height      Int?
+  uploadedBy  String   @map("uploaded_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploader Profile @relation(fields: [uploadedBy], references: [id])
+
+  @@unique([projectId, path])
+  @@index([projectId])
+  @@index([projectId, directory])
+  @@map("project_assets")
+}
+
+model YjsDocument {
+  id           String   @id @default(uuid()) @db.Uuid
+  documentName String   @unique @map("document_name")
+  projectId    String   @map("project_id") @db.Uuid
+  filePath     String   @map("file_path")
+  state        Bytes?                                    // Y.encodeStateAsUpdate(doc)
+  stateVector  Bytes?   @map("state_vector")             // Y.encodeStateVector(doc)
+  snapshot     Bytes?                                    // Optional version history
+  lastSavedAt  DateTime @default(now()) @map("last_saved_at") @db.Timestamptz
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, filePath])
+  @@index([projectId])
+  @@map("yjs_documents")
+}
+
+model CollaborationSession {
+  id             String    @id @default(uuid()) @db.Uuid
+  documentName   String    @map("document_name")
+  userId         String    @map("user_id") @db.Uuid
+  connectedAt    DateTime  @default(now()) @map("connected_at") @db.Timestamptz
+  disconnectedAt DateTime? @map("disconnected_at") @db.Timestamptz
+  userAgent      String?   @map("user_agent")
+  ipAddress      String?   @map("ip_address")
+
+  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([documentName])
+  @@index([userId])
+  @@map("collaboration_sessions")
+}

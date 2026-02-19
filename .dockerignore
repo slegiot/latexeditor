@@ -1,0 +1,57 @@
+# ─────────────────────────────────────────────────────────────
+# LaTeXForge — Docker Ignore
+# ─────────────────────────────────────────────────────────────
+# Keep the build context small for faster Render deployments.
+# ─────────────────────────────────────────────────────────────
+
+# Dependencies (rebuilt in container)
+node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+.next
+dist
+out
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Version control
+.git
+.gitignore
+
+# Supabase local
+supabase/.temp
+supabase/.branches
+
+# IDE / Editor
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+*.md
+!README.md
+LICENSE
+.eslintcache
+.turbo
+
+# Compile sandbox (separate image)
+compile/
