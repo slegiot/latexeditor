@@ -90,7 +90,7 @@ const worker = new Worker<CompileJobData, CompileJobResult>(
         };
     },
     {
-        connection,
+        connection: connection as any,
         concurrency: 3,          // Max parallel compilations
         limiter: {
             max: 10,
