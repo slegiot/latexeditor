@@ -2,19 +2,19 @@
 // BullMQ — Compilation Queue
 // ─────────────────────────────────────────────────────────────
 
-import { Queue } from 'bullmq';
+import { Queue, type ConnectionOptions } from 'bullmq';
 import { getRedis } from './redis';
 import type { CompileJobData } from '@/types';
 
 export const COMPILE_QUEUE_NAME = 'latex-compile';
 
 // Singleton queue instance
-let compileQueue: Queue<CompileJobData> | null = null;
+let compileQueue: Queue | null = null;
 
-export function getCompileQueue(): Queue<CompileJobData> {
+export function getCompileQueue(): Queue {
     if (!compileQueue) {
-        compileQueue = new Queue<CompileJobData>(COMPILE_QUEUE_NAME, {
-            connection: getRedis(),
+        compileQueue = new Queue(COMPILE_QUEUE_NAME, {
+            connection: getRedis() as unknown as ConnectionOptions,
             defaultJobOptions: {
                 attempts: 2,
                 backoff: {
